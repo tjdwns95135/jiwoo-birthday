@@ -9,7 +9,7 @@
 <meta property="og:type" content="website">
 <meta property="og:title" content="오늘은 지우의 생일이래요">
 <meta property="og:description" content="짱구가 지우한테 전하는 생일 축하">
-<meta property="og:image" content="https://tjdwns95135.github.io/jiwoo-birthday/a/og-v2.png">
+<meta property="og:image" content="https://tjdwns95135.github.io/jiwoo-birthday/a/og-v2.png?b=08282334">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
@@ -138,11 +138,15 @@ body{
   -webkit-text-stroke:10px var(--ink);
   paint-order:stroke fill;
   text-shadow:0 8px 0 var(--cream),0 12px 0 rgba(0,0,0,.35);
-  transform:scale(3.4) rotate(-10deg);opacity:0;
+  transform:scale(2.3) rotate(-9deg);opacity:0;
+  /* 3.4배에서 1배로 줄어드는 동안, 10px 외곽선과 그림자 두 겹을 매 프레임
+     거대한 크기로 다시 그리느라 메인 스레드가 250ms 넘게 멈춘다.
+     한 번만 그려 두고 그 결과를 확대·축소하도록 별도 레이어로 올린다. */
+  will-change:transform,opacity;
 }
 .bigtitle.on{animation:slam .75s cubic-bezier(.2,1.5,.35,1) forwards}
 @keyframes slam{
-  0%{transform:scale(3.4) rotate(-10deg);opacity:0}
+  0%{transform:scale(2.3) rotate(-9deg);opacity:0}
   50%{opacity:1}
   68%{transform:scale(.9) rotate(2.5deg);opacity:1}
   84%{transform:scale(1.07) rotate(-1.5deg)}
@@ -192,7 +196,8 @@ body{
      매 프레임 그림자를 새로 그리느라 메인 스레드가 막히고 배경 구름이 끊긴다. */
   opacity:0;transform:scale(.6) rotate(-8deg);
 }
-.cast-media.on{animation:castIn .5s cubic-bezier(.2,1.6,.4,1) forwards}
+.cast-media.on{animation:castIn .5s cubic-bezier(.2,1.6,.4,1) forwards;
+  will-change:transform,opacity}
 /* PNG 소개컷은 배경이 투명해 캐릭터만 뜨지만, 영상 컷은 원본 배경이 남는다.
    테두리를 둘러 "액자에 넣은 사진"으로 보이게 해야 나란히 놔도 안 어색하다. */
 /* video 는 대체 요소라 ::after 를 못 붙이고, inset box-shadow 는 영상에 덮인다.
@@ -234,8 +239,9 @@ video.cast-media{
 /* scroll-snap 으로 넘긴다. 직접 드래그를 구현하는 것보다 폰에서 훨씬 자연스럽다. */
 /* 두 장의 높이를 여기서 한 번에 정한다. 카드마다 따로 두면 넘길 때 상자 크기가
    바뀌어 화면이 출렁인다. */
+/* 다시 보기 버튼이 흐름에서 빠져 오른쪽 아래로 갔으므로 카드가 더 커질 수 있다 */
 .pager{
-  width:100%;height:72%;flex:none;
+  width:100%;height:80%;flex:none;
   display:flex;
   overflow-x:auto;overflow-y:hidden;
   scroll-snap-type:x mandatory;
@@ -266,6 +272,21 @@ video.cast-media{
   animation:nudge 1.8s ease-in-out infinite;
 }
 .pager-hint.seen .swipe{display:none}
+
+/* 다시 보기 ──
+   글에 이어 붙이면 카드가 길어질수록 아래로 밀려 카톡 인앱 브라우저의
+   하단 툴바에 가린다. 흐름에서 빼서 오른쪽 아래에 아이콘만 남긴다.
+   툴바 높이는 innerHeight 에 안 잡히므로 그만큼 띄워 둔다. */
+#replay{
+  position:absolute;right:16px;bottom:78px;z-index:30;
+  width:52px;height:52px;padding:0;
+  border-radius:50%;
+  font-size:24px;line-height:1;
+  display:grid;place-items:center;
+  box-shadow:0 5px 0 var(--ink);
+  animation:none;                  /* 구석에서는 커졌다 작아질 필요가 없다 */
+}
+#replay:active{transform:translateY(4px);box-shadow:0 1px 0 var(--ink)}
 @keyframes nudge{0%,100%{transform:translateX(0)}55%{transform:translateX(5px)}}
 
 /* 2장: 곡선 글씨 + 사진 */
@@ -414,7 +435,7 @@ video.cast-media{
 
   <!-- 1. 오프닝 타이틀 -->
   <section class="scene" id="s-title">
-    <video id="v-intro" src="a/intro.mp4" muted playsinline loop preload="auto"></video>
+    <video id="v-intro" src="a/intro.mp4?b=08282334" muted playsinline loop preload="auto"></video>
     <div class="sub dark" id="sub1">떡잎마을에서 알려드립니다</div>
     <h1 class="bigtitle" id="title">오늘은<br>지우의<br>생일이래요</h1>
     <div class="sub dark" id="sub2">— 오늘의 주인공 등장 —</div>
@@ -427,13 +448,13 @@ video.cast-media{
          그 순간부터 받기 시작해서 빈 화면이 잠깐 뜬다. -->
     <div class="cast-slot">
       <img   id="c-shin"    class="cast-media" alt="" style="display:none"
-        src="a/shin-front-alpha.png">
+        src="a/shin-front-alpha.png?b=08282334">
       <video id="v-shiro"   class="cast-media" style="display:none"
-        src="a/shiro.mp4" muted playsinline loop preload="auto"></video>
+        src="a/shiro.mp4?b=08282334" muted playsinline loop preload="auto"></video>
       <img   id="c-friends" class="cast-media" alt="" style="display:none"
-        src="a/friends-alpha.png">
+        src="a/friends-alpha.png?b=08282334">
       <img   id="c-mask"    class="cast-media" alt="" style="display:none"
-        src="a/mask-alpha.png">
+        src="a/mask-alpha.png?b=08282334">
     </div>
     <div id="cast-name"></div>
     <div class="cap-slot"><div class="caption" id="cast-line"></div></div>
@@ -443,9 +464,9 @@ video.cast-media{
   <section class="scene" id="s-run">
     <!-- 두 클립을 겹쳐 두고 표시만 바꾼다. src 를 갈아끼우면 그 순간 다시 받는다. -->
     <div class="panel">
-      <video id="v-run" src="a/shin-run.mp4"
+      <video id="v-run" src="a/shin-run.mp4?b=08282334"
         muted playsinline loop preload="auto"></video>
-      <video id="v-news" src="a/shin-news.mp4"
+      <video id="v-news" src="a/shin-news.mp4?b=08282334"
         muted playsinline loop preload="auto" style="display:none"></video>
     </div>
     <div class="cap-slot"><div class="caption" id="cap-run"></div></div>
@@ -453,20 +474,20 @@ video.cast-media{
 
   <!-- 4. 엉덩이 임팩트 -->
   <section class="scene" id="s-wipe">
-    <video id="v-wipe" src="a/shin-butt.mp4"
+    <video id="v-wipe" src="a/shin-butt.mp4?b=08282334"
       muted playsinline preload="auto"></video>
   </section>
 
   <!-- 5. 눈썹 씰룩 -->
   <section class="scene" id="s-flirt">
-    <div class="panel"><video id="v-flirt" src="a/shin-eyebrow.mp4"
+    <div class="panel"><video id="v-flirt" src="a/shin-eyebrow.mp4?b=08282334"
       muted playsinline loop preload="auto"></video></div>
     <div class="cap-slot"><div class="caption" id="cap-flirt"></div></div>
   </section>
 
   <!-- 6. 쑥쓰러움 -->
   <section class="scene" id="s-shy">
-    <div class="panel"><video id="v-shy" src="a/shin-shy.mp4"
+    <div class="panel"><video id="v-shy" src="a/shin-shy.mp4?b=08282334"
       muted playsinline loop preload="auto"></video></div>
     <div class="cap-slot"><div class="caption" id="cap-shy"></div></div>
   </section>
@@ -474,7 +495,7 @@ video.cast-media{
   <!-- 6. 피날레 -->
   <section class="scene" id="s-party">
     <canvas id="confetti"></canvas>
-    <img id="dancer" src="a/shin-dance-alpha.png" alt="춤추는 짱구">
+    <img id="dancer" src="a/shin-dance-alpha.png?b=08282334" alt="춤추는 짱구">
     <div class="caption on" id="cap-party">준비됐어? 눌러봐!</div>
     <button class="btn" id="open">🎂 열어보기</button>
   </section>
@@ -497,7 +518,7 @@ video.cast-media{
             <text class="arc-t"><textPath href="#arc-p" startOffset="50%"
               text-anchor="middle">우주 최강 미녀 심지우</textPath></text>
           </svg>
-          <img class="photo" id="photo" src="a/photo-e73799067b891d63.jpg" alt="지우">
+          <img class="photo" id="photo" src="a/photo-e73799067b891d63.jpg?b=08282334" alt="지우">
         </div>
       </div>
     </div>
@@ -505,7 +526,7 @@ video.cast-media{
       <span class="dot on"></span><span class="dot"></span>
       <span class="swipe">옆으로 넘겨보세요</span>
     </div>
-    <button class="btn" id="replay">↺ 다시 보기</button>
+    <button class="btn" id="replay" aria-label="처음부터 다시 보기" title="처음부터 다시 보기">↺</button>
   </section>
 
   <!-- 시작 화면 -->
@@ -513,7 +534,7 @@ video.cast-media{
     <!-- 3층 구조: 원본 그림 → 간판(원래 로고를 덮음) → 간판에 걸친 캐릭터 다시 얹기.
          원본을 지우지 않으니 번지거나 얼룩이 남지 않는다. -->
     <div class="cover">
-      <img class="cover-base" src="a/title-card.png" alt="">
+      <img class="cover-base" src="a/title-card.png?b=08282334" alt="">
       <div class="logo-board"><span>지우는 못말려</span></div>
     </div>
     <button class="btn" id="start">눌러줘!</button>
@@ -523,11 +544,11 @@ video.cast-media{
   <button id="sound" title="소리">🔊</button>
   <button id="skip">건너뛰기 ▸</button>
   <!-- 인트로 사운드(5초)는 타이틀 장면에 한 번. bgm.mp3는 넣어두면 자동으로 잡힌다. -->
-  <audio id="sfx-intro" src="a/intro.mp3" preload="auto"></audio>
+  <audio id="sfx-intro" src="a/intro.mp3?b=08282334" preload="auto"></audio>
   <!-- 대사는 이 엘리먼트 하나를 돌려 쓴다. 매번 new Audio() 로 만들면
        폰 브라우저가 "사용자가 누른 적 없는 새 소리"로 보고 막을 수 있다. -->
   <audio id="voice" preload="auto"></audio>
-  <audio id="bgm" src="a/bgm.mp3" loop preload="auto"></audio>
+  <audio id="bgm" src="a/bgm.mp3?b=08282334" loop preload="auto"></audio>
 </div>
 
 <script>
@@ -564,7 +585,7 @@ const VOICE = {
 };
 
 /* 캐릭터 소개 컷. 짱구 말투로 한 줄씩.
-   v: 녹음 파일 이름(a/v01.mp3), p/r: 그 줄만 음높이·속도 조정 */
+   v: 녹음 파일 이름(a/v01.mp3?b=08282334), p/r: 그 줄만 음높이·속도 조정 */
 const CAST = [
   { el:'#c-shin',    name:'짱구',       line:'안녕하세요~ 저는 짱구예요',        v:'v01', p:1.9 },
   { el:'#v-shiro',   name:'흰둥이',     line:'얘는 우리 흰둥이고요',             v:'v02' },
@@ -612,23 +633,23 @@ const stage = $('#stage');
    표지를 보고 있는 동안(사용자가 버튼 누르기 전) 전부 캐시에 채워둔다. */
 (function prefetch(){
   const list = [
-    'a/intro.mp4',
-    'a/shin-run.mp4',
-    'a/shin-news.mp4',
-    'a/shin-butt.mp4',
-    'a/shin-eyebrow.mp4',
-    'a/shin-shy.mp4',
-    'a/shiro.mp4',
-    'a/intro.mp3',
+    'a/intro.mp4?b=08282334',
+    'a/shin-run.mp4?b=08282334',
+    'a/shin-news.mp4?b=08282334',
+    'a/shin-butt.mp4?b=08282334',
+    'a/shin-eyebrow.mp4?b=08282334',
+    'a/shin-shy.mp4?b=08282334',
+    'a/shiro.mp4?b=08282334',
+    'a/intro.mp3?b=08282334',
     /* 소개 컷 APNG. 떡잎방범대가 956KB 로 제일 크다. */
-    'a/shin-front-alpha.png',
-    'a/friends-alpha.png',
-    'a/mask-alpha.png',
-    'a/shin-dance-alpha.png',
-    'a/photo-e73799067b891d63.jpg'
+    'a/shin-front-alpha.png?b=08282334',
+    'a/friends-alpha.png?b=08282334',
+    'a/mask-alpha.png?b=08282334',
+    'a/shin-dance-alpha.png?b=08282334',
+    'a/photo-e73799067b891d63.jpg?b=08282334'
   ];
   for(let i = 0; i <= 11; i++){   /* v00 = 오프닝 타이틀 대사 */
-    list.push('a/v' + String(i).padStart(2,'0') + '.mp3');
+    list.push('a/v' + String(i).padStart(2,'0') + '.mp3?b=08282334');
   }
   for(const u of list){
     fetch(u).then(r => r.blob()).catch(()=>{});
@@ -820,7 +841,7 @@ function startBgm(){
 }
 
 /* ── 짱구 목소리 ──
-   녹음 파일(a/vNN.mp3)이 있으면 그걸 쓰고, 없으면 브라우저 음성으로
+   녹음 파일(a/vNN.mp3?b=08282334)이 있으면 그걸 쓰고, 없으면 브라우저 음성으로
    대체한다. 브라우저 음성은 그대로 쓰면 어른 목소리라, 음높이를 크게 올리고
    속도를 붙여 만화 꼬마 톤으로 만든다. */
 let koVoice = null;
@@ -844,7 +865,7 @@ function speak(item){
   stopVoice();
   const text = item.t || item.line || '';
   if(!item.v) return tts(text, item);
-  const src = `a/${item.v}.mp3`;
+  const src = `a/${item.v}.mp3?b=08282334`;
   if(!src) return tts(text, item);
   let fellBack = false;
   const fallback = ()=>{ if(!fellBack){ fellBack = true; tts(text, item); } };
@@ -1017,12 +1038,21 @@ function finale(){
    시작 버튼을 누른 이 순간이 유일하게 재생이 허용되는 시점이므로,
    여기서 모든 영상을 잠깐 재생했다 멈춰 버퍼를 채워 둔다. */
 function primeVideos(){
-  /* 7개를 동시에 재생시키면 디코더가 몰려 첫 몇 초가 끊긴다. 조금씩 흩는다. */
-  const vs = [...document.querySelectorAll('video')];
-  vs.forEach((v, i) => setTimeout(()=>{
+  /* 프레임을 재보니 여기서 526ms 짜리 긴 작업이 하나 생겼다. 영상 7개를
+     120ms 간격으로 깨워도 디코더 준비가 겹쳐 메인 스레드를 통째로 막고,
+     그동안 배경 구름이 멈춘다.
+     장면에 나오는 순서대로, 넉넉한 간격으로 하나씩 깨운다.
+     맨 앞 두 개만 바로 준비하면 되고 나머지는 오프닝 5초 동안 천천히 채워진다. */
+  const order = ['#v-intro','#v-shiro','#v-run','#v-news','#v-wipe','#v-flirt','#v-shy'];
+  const seen = new Set();
+  const list = [];
+  for(const sel of order){ const v = $(sel); if(v){ list.push(v); seen.add(v); } }
+  for(const v of document.querySelectorAll('video')) if(!seen.has(v)) list.push(v);
+
+  list.forEach((v, i) => setTimeout(()=>{
     const p = v.play();
     if(p && p.then) p.then(()=>{ v.pause(); v.currentTime = 0; }).catch(()=>{});
-  }, i * 120));
+  }, i === 0 ? 0 : 250 + i * 450));
 }
 
 $('#start').onclick = ()=>{
