@@ -451,6 +451,9 @@ const SHY_CAPS = [
   { t:'부끄러워서 못 하겠어요',     v:'v09', p:1.55, r:0.88 }
 ];
 
+/* 오프닝 타이틀이 쿵 하고 나타나는 순간에 같이 나가는 대사 */
+const TITLE_LINE = { t:'오늘은 지우의 생일이래요', v:'v00' };
+
 /* 피날레 대사 */
 const PARTY_LINE = { t:'준비됐어? 눌러봐!', v:'v10', p:1.95, r:1.1 };
 
@@ -481,7 +484,7 @@ const stage = $('#stage');
     'a/shiro.mp4',
     'a/intro.mp3'
   ];
-  for(let i = 1; i <= 11; i++){
+  for(let i = 0; i <= 11; i++){   /* v00 = 오프닝 타이틀 대사 */
     list.push('a/v' + String(i).padStart(2,'0') + '.mp3');
   }
   for(const u of list){
@@ -737,6 +740,7 @@ async function run(){
   $('#sub1').classList.add('on');
   await wait(700); if(aborted) return;
   $('#title').classList.add('on');
+  speak(TITLE_LINE);            /* 2.66초, 장면(5.1초) 안에 끝난다 */
   setTimeout(()=>{
     stage.classList.add('shake');
     setTimeout(()=>stage.classList.remove('shake'),350);
