@@ -1,0 +1,785 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>오늘은 지우의 생일이래요</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jua&family=Gaegu:wght@400;700&family=Black+Han+Sans&display=swap" rel="stylesheet">
+<style>
+/* ── 팔레트: 짱구 오프닝 화면에서 뽑은 색 ── */
+:root{
+  --sky:#4FA8E0; --sky-hi:#7FC8F0; --sky-lo:#2E86C8;
+  --cloud:#EFF6FF;
+  --red:#E23B2E; --yellow:#F9DC4A; --cream:#FFF7DE;
+  --intro-bg:#F6EEAA;
+  --pink:#FF6FA5;
+  --ink:#241C14; --grass:#5FBF3F;
+  --title:'Jua',sans-serif;
+  --body:'Jua',sans-serif;
+  --hand:'Gaegu',cursive;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:#141414}
+body{
+  font-family:var(--body); color:var(--ink);
+  display:grid; place-items:center;
+  -webkit-font-smoothing:antialiased;
+  -webkit-tap-highlight-color:transparent;
+  user-select:none;
+}
+
+/* ── 무대: 세로 화면 기준. PC에선 가운데 정렬 ── */
+#stage{
+  position:relative; overflow:hidden;
+  width:min(100vw,460px);
+  /* 주어진 높이를 그대로 쓴다. 9:16으로 자르면 길쭉한 폰에서 위아래가 남고
+     아티팩트 iframe 안에서는 더 어긋난다. */
+  height:100dvh;
+  /* 글자·이미지 크기를 창이 아니라 이 스테이지 너비에 맞추기 위한 선언 */
+  container-type:inline-size;
+  background:linear-gradient(180deg,var(--sky-hi) 0%,var(--sky) 55%,#96DAF7 100%);
+  box-shadow:0 0 70px rgba(0,0,0,.55);
+}
+#stage.shake{animation:shake .34s ease}
+@keyframes shake{
+  0%,100%{transform:translate(0,0)}
+  20%{transform:translate(-8px,6px)}
+  45%{transform:translate(7px,-5px)}
+  70%{transform:translate(-5px,-3px)}
+}
+
+/* ── 흘러가는 구름 ── */
+.clouds{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.cloud{position:absolute;background:var(--cloud);border-radius:50%;
+  filter:drop-shadow(0 7px 0 rgba(150,195,235,.45))}
+.cloud::before,.cloud::after{content:'';position:absolute;background:var(--cloud);border-radius:50%}
+.cloud::before{width:64%;height:112%;left:-22%;top:4%}
+.cloud::after{width:52%;height:96%;right:-16%;top:14%}
+@keyframes drift{from{transform:translateX(130%)}to{transform:translateX(-180%)}}
+
+/* ── 잔디 언덕 (하단 고정) ── */
+.hill{position:absolute;left:-10%;width:120%;height:34%;bottom:-14%;
+  background:var(--grass);border-radius:50% 50% 0 0;pointer-events:none}
+.hill.back{bottom:-8%;height:28%;background:#4EA832;opacity:.85}
+
+/* ── 장면 ── */
+.scene{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:16px;padding:22px;
+  opacity:0;visibility:hidden;
+  transition:opacity .4s ease,visibility .4s;
+}
+.scene.on{opacity:1;visibility:visible}
+
+/* ── 만화 컷 프레임 ──
+   원본이 640x480이라 전체화면으로 늘리면 2.5배 확대돼 뭉갠다.
+   가로폭에 맞춘 4:3 밴드면 확대율 1.2배 이하라 선명하게 유지된다. */
+.panel{
+  width:100%;aspect-ratio:4/3;flex:none;
+  border:5px solid var(--ink);border-radius:16px;overflow:hidden;background:#000;
+  box-shadow:0 10px 0 rgba(0,0,0,.24),inset 0 0 0 4px var(--cream);
+}
+.panel video{width:100%;height:100%;object-fit:cover;display:block}
+
+/* ── 오프닝 타이틀 장면 ──
+   사용자가 준 인트로 영상(1920x1080)이 배경. 가운데가 비어 있어 타이틀 자리가 된다.
+   세로 화면이라 cover로 좌우가 잘리지만 장난감은 사방에 있어 분위기는 남는다.
+   영상 밖 여백은 인트로 배경색과 같게 칠해 경계가 안 보이게 한다. */
+#s-title{background:var(--intro-bg);padding:20px}
+#v-intro{
+  position:absolute;inset:0;width:100%;height:100%;
+  object-fit:cover;z-index:0;pointer-events:none;
+}
+#s-title > :not(#v-intro){position:relative;z-index:1}
+
+/* ── 짱구 로고풍 타이틀 ──
+   크림색 배경 위라 핑크 채움 + 두툼한 검정 외곽선 + 크림 그림자로 3층을 만든다. */
+.bigtitle{
+  font-family:var(--title);
+  font-size:clamp(40px,13cqw,66px);
+  line-height:1.1;text-align:center;letter-spacing:-.01em;
+  color:var(--pink);
+  -webkit-text-stroke:10px var(--ink);
+  paint-order:stroke fill;
+  text-shadow:0 8px 0 var(--cream),0 12px 0 rgba(0,0,0,.35);
+  transform:scale(3.4) rotate(-10deg);opacity:0;
+}
+.bigtitle.on{animation:slam .75s cubic-bezier(.2,1.5,.35,1) forwards}
+@keyframes slam{
+  0%{transform:scale(3.4) rotate(-10deg);opacity:0}
+  50%{opacity:1}
+  68%{transform:scale(.9) rotate(2.5deg);opacity:1}
+  84%{transform:scale(1.07) rotate(-1.5deg)}
+  100%{transform:scale(1) rotate(-2.5deg);opacity:1}
+}
+
+/* ── 부제 / 자막 ── */
+.sub{
+  font-size:clamp(15px,4.6cqw,21px);color:#fff;letter-spacing:.01em;
+  text-shadow:0 3px 0 var(--sky-lo),0 0 12px rgba(0,0,0,.22);
+  opacity:0;transform:translateY(10px);
+  transition:opacity .45s ease,transform .45s ease;
+}
+.sub.on{opacity:1;transform:translateY(0)}
+/* 크림색 인트로 배경 위에서는 흰 글씨가 안 보이므로 어둡게 뒤집는다. */
+.sub.dark{color:var(--ink);text-shadow:0 2px 0 rgba(255,255,255,.85)}
+
+.caption{
+  font-size:clamp(17px,5cqw,23px);text-align:center;line-height:1.5;
+  color:#fff;padding:12px 20px;border-radius:999px;
+  background:rgba(36,28,20,.84);box-shadow:0 4px 0 rgba(0,0,0,.26);
+  opacity:0;transform:translateY(14px) scale(.96);
+  transition:opacity .35s ease,transform .35s cubic-bezier(.2,1.4,.4,1);
+  max-width:100%;
+}
+.caption.on{opacity:1;transform:translateY(0) scale(1)}
+
+/* ── 캐릭터 소개 컷 ── */
+#s-cast{justify-content:center;gap:10px}
+/* 소개 컷은 PNG일 수도 MP4일 수도 있다. 둘이 같은 자리·같은 크기를 쓰도록
+   인라인 스타일을 복사하지 말고 이 클래스 하나를 공유한다. */
+.cast-media{
+  width:min(72cqw,320px);height:min(72cqw,320px);
+  object-fit:contain;border-radius:14px;
+  filter:drop-shadow(0 14px 12px rgba(0,0,0,.26));
+  opacity:0;transform:scale(.6) rotate(-8deg);
+}
+.cast-media.on{animation:castIn .5s cubic-bezier(.2,1.6,.4,1) forwards}
+/* PNG 소개컷은 배경이 투명해 캐릭터만 뜨지만, 영상 컷은 원본 배경이 남는다.
+   테두리를 둘러 "액자에 넣은 사진"으로 보이게 해야 나란히 놔도 안 어색하다. */
+video.cast-media{
+  border:5px solid var(--ink);background:#000;
+  box-shadow:0 8px 0 rgba(0,0,0,.22),inset 0 0 0 4px var(--cream);
+}
+@keyframes castIn{to{opacity:1;transform:scale(1) rotate(0)}}
+#cast-name{
+  font-family:var(--title);font-size:clamp(28px,8.5cqw,40px);
+  color:var(--cream);-webkit-text-stroke:8px var(--ink);paint-order:stroke fill;
+  text-shadow:0 6px 0 var(--red);
+  opacity:0;transform:translateY(16px);
+  transition:opacity .35s ease,transform .35s cubic-bezier(.2,1.5,.4,1);
+}
+#cast-name.on{opacity:1;transform:translateY(0)}
+
+/* ── 엉덩이 전환: 화면을 꽉 채워 다음 장면을 덮는다 ── */
+#s-wipe{padding:0;background:#000}
+#s-wipe video{width:100%;height:100%;object-fit:cover}
+
+/* ── 피날레 ── */
+#s-party{justify-content:flex-end;padding-bottom:9vh;gap:14px}
+#dancer{width:min(60cqw,260px);height:auto;
+  filter:drop-shadow(0 12px 10px rgba(0,0,0,.28))}
+#confetti{position:absolute;inset:0;pointer-events:none}
+
+/* ── 편지 ── */
+#s-final{justify-content:center;gap:18px}
+.letter{
+  width:100%;background:var(--cream);
+  border:4px solid var(--ink);border-radius:20px;
+  padding:26px 22px 26px;
+  box-shadow:0 12px 0 rgba(0,0,0,.24);
+  transform:scale(.85) rotate(-1.5deg);opacity:0;
+  max-height:66dvh;overflow-y:auto;
+}
+.letter.on{animation:pop .6s cubic-bezier(.2,1.5,.4,1) forwards}
+@keyframes pop{to{transform:scale(1) rotate(-1.5deg);opacity:1}}
+.letter h2{
+  font-family:var(--title);font-size:clamp(27px,8.4cqw,37px);
+  color:var(--yellow);text-align:center;margin-bottom:16px;line-height:1.2;
+  -webkit-text-stroke:7px var(--ink);paint-order:stroke fill;
+  text-shadow:0 5px 0 var(--red);
+}
+.letter p{
+  font-family:var(--hand);font-weight:700;
+  font-size:clamp(19px,5.4cqw,24px);line-height:1.8;white-space:pre-line;
+}
+.letter .from{
+  text-align:right;margin-top:18px;
+  font-family:var(--hand);font-weight:700;
+  font-size:clamp(18px,5cqw,22px);color:#8a6438;
+}
+
+/* ── 버튼 ── */
+.btn{
+  font-family:var(--title);font-size:clamp(19px,5.6cqw,25px);
+  color:var(--cream);background:var(--red);
+  border:4px solid var(--ink);border-radius:999px;
+  padding:14px 34px;cursor:pointer;
+  box-shadow:0 7px 0 var(--ink);
+  transition:transform .1s,box-shadow .1s;
+  animation:bob 1.5s ease-in-out infinite;
+}
+.btn:active{transform:translateY(6px);box-shadow:0 1px 0 var(--ink);animation:none}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+
+/* ── 시작 화면 ── */
+#gate{
+  position:absolute;inset:0;z-index:20;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:22px;padding:26px;text-align:center;
+  background:var(--intro-bg);
+  transition:opacity .5s ease,visibility .5s;
+}
+#gate.gone{opacity:0;visibility:hidden}
+/* ── 표지 로고 ──
+   원본 간판에는 "Shinchan"이 박혀 있다. 짱아와 흰둥이가 그 간판 위에 걸쳐 있어서
+   위를 덮으면 캐릭터가 지워진다. 그래서 간판 윗선(원본 기준 63.5%)에서 이미지를
+   자르고, 아래에 같은 파랑(#0D71AD, 원본에서 실측)으로 새 간판을 붙인다.
+   캐릭터가 간판 뒤에 서 있는 원래 구도가 그대로 남는다. */
+.cover{
+  width:min(74cqw,310px);
+  display:flex;flex-direction:column;align-items:center;
+  filter:drop-shadow(0 10px 8px rgba(0,0,0,.22));
+}
+.cover-img{width:100%;aspect-ratio:640/258;overflow:hidden}
+.cover-img img{width:100%;display:block}
+.logo-board{
+  width:92%;margin-top:-4px;
+  background:#0D71AD;
+  border:3px solid #00466E;border-radius:9px;
+  padding:9px 10px;
+  transform:rotate(-1deg);
+  display:grid;place-items:center;
+  box-shadow:0 5px 0 rgba(0,0,0,.26);
+}
+.logo-board span{
+  font-family:var(--title);
+  font-size:min(10cqw,42px);
+  color:#fff;white-space:nowrap;letter-spacing:.01em;
+  text-shadow:0 3px 0 rgba(0,52,88,.6);
+}
+#gate .hint{font-size:clamp(14px,4.2cqw,18px);color:var(--ink);
+  text-shadow:0 2px 0 rgba(255,255,255,.85)}
+
+/* ── 소리 토글 ── */
+#sound{
+  position:absolute;top:14px;right:14px;z-index:30;
+  width:46px;height:46px;border-radius:50%;
+  border:3px solid var(--ink);background:var(--cream);
+  font-size:20px;cursor:pointer;display:none;place-items:center;
+  box-shadow:0 4px 0 rgba(0,0,0,.26);
+}
+#sound.show{display:grid}
+
+/* ── 건너뛰기 ── */
+#skip{
+  position:absolute;bottom:14px;left:50%;transform:translateX(-50%);
+  z-index:25;font-family:var(--body);font-size:14px;
+  color:#fff;background:rgba(36,28,20,.5);
+  border:none;border-radius:999px;padding:8px 18px;cursor:pointer;
+  opacity:0;visibility:hidden;transition:opacity .3s,visibility .3s;
+}
+#skip.show{opacity:1;visibility:visible}
+
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.01ms!important;transition-duration:.01ms!important}
+}
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div class="clouds" id="clouds"></div>
+
+  <!-- 1. 오프닝 타이틀 -->
+  <section class="scene" id="s-title">
+    <video id="v-intro" src="a/intro.mp4" muted playsinline loop preload="auto"></video>
+    <div class="sub dark" id="sub1">떡잎마을에서 알려드립니다</div>
+    <h1 class="bigtitle" id="title">오늘은<br>지우의<br>생일이래요</h1>
+    <div class="sub dark" id="sub2">— 오늘의 주인공 등장 —</div>
+  </section>
+
+  <!-- 2. 캐릭터 소개 -->
+  <section class="scene" id="s-cast">
+    <div class="hill back"></div><div class="hill"></div>
+    <img id="cast-img" class="cast-media" alt="">
+    <div id="cast-name"></div>
+    <div class="caption" id="cast-line"></div>
+  </section>
+
+  <!-- 3. 러닝 -->
+  <section class="scene" id="s-run">
+    <div class="panel"><video id="v-run" src="a/shin-run.mp4"
+      muted playsinline loop preload="auto"></video></div>
+    <div class="caption" id="cap-run"></div>
+  </section>
+
+  <!-- 4. 엉덩이 임팩트 -->
+  <section class="scene" id="s-wipe">
+    <video id="v-wipe" src="a/shin-butt.mp4"
+      muted playsinline preload="auto"></video>
+  </section>
+
+  <!-- 5. 눈썹 씰룩 -->
+  <section class="scene" id="s-flirt">
+    <div class="panel"><video id="v-flirt" src="a/shin-eyebrow.mp4"
+      muted playsinline loop preload="auto"></video></div>
+    <div class="caption" id="cap-flirt"></div>
+  </section>
+
+  <!-- 6. 쑥쓰러움 -->
+  <section class="scene" id="s-shy">
+    <div class="panel"><video id="v-shy" src="a/shin-shy.mp4"
+      muted playsinline loop preload="auto"></video></div>
+    <div class="caption" id="cap-shy"></div>
+  </section>
+
+  <!-- 6. 피날레 -->
+  <section class="scene" id="s-party">
+    <canvas id="confetti"></canvas>
+    <img id="dancer" src="a/shin-dance-alpha.png" alt="춤추는 짱구">
+    <div class="caption on" id="cap-party">준비됐어? 눌러봐!</div>
+    <button class="btn" id="open">🎂 열어보기</button>
+  </section>
+
+  <!-- 7. 편지 -->
+  <section class="scene" id="s-final">
+    <div class="letter" id="letter">
+      <h2 id="final-h"></h2>
+      <p id="final-body"></p>
+      <div class="from" id="final-from"></div>
+    </div>
+    <button class="btn" id="replay">↺ 다시 보기</button>
+  </section>
+
+  <!-- 시작 화면 -->
+  <div id="gate">
+    <div class="cover">
+      <div class="cover-img"><img src="a/title-card.png" alt=""></div>
+      <div class="logo-board"><span>지우는 못말려</span></div>
+    </div>
+    <button class="btn" id="start">눌러줘!</button>
+    <div class="hint">소리를 켜면 더 좋아요 🔊</div>
+  </div>
+
+  <button id="sound" title="소리">🔊</button>
+  <button id="skip">건너뛰기 ▸</button>
+  <!-- 인트로 사운드(5초)는 타이틀 장면에 한 번. bgm.mp3는 넣어두면 자동으로 잡힌다. -->
+  <audio id="sfx-intro" src="a/intro.mp3" preload="auto"></audio>
+  <!-- 대사는 이 엘리먼트 하나를 돌려 쓴다. 매번 new Audio() 로 만들면
+       폰 브라우저가 "사용자가 누른 적 없는 새 소리"로 보고 막을 수 있다. -->
+  <audio id="voice" preload="auto"></audio>
+  <audio id="bgm" src="a/bgm.mp3" loop preload="auto"></audio>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════════════
+   ▼▼▼ 여기만 고치면 됩니다 ▼▼▼
+   ══════════════════════════════════════════════════════════ */
+
+const LETTER = {
+  title: "지우야\n생일축하해",
+  body:
+`이건 짱구 좋아하는 지우를 위한
+자그마한 이벤트(?)야
+
+매일 나랑 놀아줘서 고마워
+
+항상 행복만 하자
+
+생일축하해`,
+  from: "— 성준이가"
+};
+
+/* 목소리 설정.
+   실제 성우 목소리는 쓰지 않는다. 브라우저 한국어 음성의 음높이를 크게 올리고
+   속도를 살짝 붙여 "만화 속 능글맞은 꼬마" 톤을 만든다.
+   a/<id>.mp3 를 넣어두면 TTS 대신 그 파일을 먼저 재생한다. */
+const VOICE = {
+  on:   true,   // 목소리 전체 on/off
+  /* 파일이 없을 때 브라우저 음성으로 때우면, 앞뒤 짱구 목소리와 톤이 확 달라
+     그 줄만 다른 사람이 말하는 것처럼 들린다. 차라리 무음으로 둔다. */
+  tts:  false,
+  lang: 'ko-KR',
+  pitch: 1.85,  // 기본 음높이 (0~2). 높을수록 어리게
+  rate:  1.06   // 기본 속도
+};
+
+/* 캐릭터 소개 컷. 짱구 말투로 한 줄씩.
+   v: 녹음 파일 이름(a/v01.mp3), p/r: 그 줄만 음높이·속도 조정 */
+const CAST = [
+  { img:'a/shin-front-alpha.png', name:'짱구',
+    line:'안녕하세요~ 저는 짱구예요', v:'v01', p:1.9 },
+  { img:'a/shiro.mp4',            name:'흰둥이',
+    line:'얘는 우리 흰둥이고요', v:'v02' },
+  { img:'a/friends-alpha.png',    name:'떡잎방범대',
+    line:'다들 오늘 무슨 날인지 안대요', v:'v03' },
+  { img:'a/mask-alpha.png',       name:'액션가면',
+    line:'중요한 날이라 이렇게 갈아입었어요', v:'v04', p:1.5, r:0.98 }
+];
+
+const RUN_CAPS = [
+  { t:'그래서 지금 열심히 달려가는 중이에요', v:'v05', r:1.14 },
+  { t:'흰둥이도 같이 뛰어요',                 v:'v06', r:1.14 },
+  /* clip을 주면 그 자막 동안만 영상이 바뀐다 */
+  { t:'오늘 떡잎마을에 큰일이 났거든요',       v:'v07', r:1.1,
+    clip:'a/shin-news.mp4' }
+];
+
+/* 눈썹 씰룩 — 쑥쓰러움 직전에 한 번 치고 들어간다.
+   v11은 편지 음성을 뺀 자리라, v01~v10 번호는 그대로 유지된다. */
+const FLIRT_LINE = { t:'저기 예쁜 누나!', v:'v11', p:1.95, r:1.05 };
+
+const SHY_CAPS = [
+  { t:'사실.. 할 말이 있는데요..!', v:'v08', p:1.6, r:0.9 },
+  { t:'부끄러워서 못 하겠어요',     v:'v09', p:1.55, r:0.88 }
+];
+
+/* 피날레 대사 */
+const PARTY_LINE = { t:'준비됐어? 눌러봐!', v:'v10', p:1.95, r:1.1 };
+
+/* 오프닝이 끝난 뒤 깔리는 배경음악 크기 (0~1). 대사를 덮지 않게 작게. */
+const BGM_VOLUME = 0.22;
+
+/* ══════════════════════════════════════════════════════════
+   ▲▲▲ 여기까지 ▲▲▲
+   ══════════════════════════════════════════════════════════ */
+
+const $ = s => document.querySelector(s);
+const stage = $('#stage');
+const scenes = {
+  title:$('#s-title'), cast:$('#s-cast'), run:$('#s-run'),
+  wipe:$('#s-wipe'), flirt:$('#s-flirt'), shy:$('#s-shy'),
+  party:$('#s-party'), final:$('#s-final')
+};
+
+/* 편지 채우기 */
+$('#final-h').innerHTML   = LETTER.title.replace(/\n/g,'<br>');
+$('#final-body').textContent = LETTER.body;
+$('#final-from').textContent = LETTER.from;
+
+/* ── 구름 ── */
+(function(){
+  const wrap = $('#clouds');
+  for(let i=0;i<7;i++){
+    const c = document.createElement('div');
+    c.className = 'cloud';
+    const w = 70 + Math.random()*95;
+    c.style.cssText =
+      `width:${w}px;height:${w*0.42}px;top:${3+Math.random()*55}%;` +
+      `opacity:${(0.55+Math.random()*0.4).toFixed(2)};` +
+      `animation:drift ${18+Math.random()*22}s linear ${-Math.random()*30}s infinite`;
+    wrap.appendChild(c);
+  }
+})();
+
+/* ── 유틸 ── */
+let current = null;
+let aborted = false;
+
+function show(name){
+  if(current) scenes[current].classList.remove('on');
+  scenes[name].classList.add('on');
+  current = name;
+}
+/* 중간에 건너뛰면 남은 대기를 즉시 깨고 나온다. */
+/* ── 높이 맞추기 ──
+   카톡·인스타 같은 인앱 브라우저는 자기 상단/하단 바를 빼지 않아서
+   100dvh 가 실제 보이는 높이보다 크게 나온다. 그러면 아래가 잘린다.
+   visualViewport(있으면) 또는 innerHeight 로 실제 높이를 재서 직접 넣는다. */
+function fitStage(){
+  const h = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+  if(h) stage.style.height = h + 'px';
+  try{ sizeCanvas(); }catch(e){}
+}
+addEventListener('resize', fitStage);
+addEventListener('orientationchange', ()=> setTimeout(fitStage, 250));
+if(window.visualViewport) window.visualViewport.addEventListener('resize', fitStage);
+
+const sleepers = new Set();
+function wait(ms){
+  return new Promise(res => {
+    const id = setTimeout(()=>{ sleepers.delete(id); res(); }, ms);
+    sleepers.add(id);
+  });
+}
+function cancelWaits(){
+  for(const id of sleepers) clearTimeout(id);
+  sleepers.clear();
+}
+async function play(v){
+  try{ v.currentTime = 0; await v.play(); }catch(e){ /* 자동재생 차단돼도 흐름은 계속 */ }
+}
+/* 공유용으로 합칠 때 경로가 data:video/mp4;base64,... 로 바뀐다.
+   확장자로 판별하면 그때 전부 깨지므로 둘 다 본다. */
+function isVideo(src){
+  return /\.mp4(\?|$)/i.test(src) || src.startsWith('data:video');
+}
+/* 같은 자리의 영상만 갈아끼운다. 이미 그 영상이면 다시 로드하지 않는다.
+   (data URI는 수십만 자라 dataset에 넣지 않고 변수로 들고 있는다) */
+let curClipSrc = null;
+function setClip(v, src){
+  if(curClipSrc === src) return;
+  curClipSrc = src;
+  v.src = src;
+  play(v);
+}
+/* 자막 한 줄 띄우고 같이 말하게 한 뒤 지우기.
+   item은 문자열이거나 {t, v, p, r} 객체. */
+async function line(el, item, ms){
+  const obj = typeof item === 'string' ? { t:item } : item;
+  el.textContent = obj.t;
+  el.classList.add('on');
+  speak(obj);
+  await wait(ms);
+  if(aborted) return;
+  el.classList.remove('on');
+  await wait(360);
+}
+
+/* ── 폭죽 ── */
+const cv = $('#confetti'), cx = cv.getContext('2d');
+let parts = [], confettiOn = false;
+const EMO = ['🍫','🎂','🎈','⭐','🎉'];
+function sizeCanvas(){
+  const r = stage.getBoundingClientRect();
+  cv.width = r.width; cv.height = r.height;
+}
+function burst(n){
+  for(let i=0;i<n;i++) parts.push({
+    x:Math.random()*cv.width,
+    y:-20-Math.random()*cv.height*0.6,
+    vy:1.3+Math.random()*2.5, vx:(Math.random()-0.5)*1.3,
+    rot:Math.random()*6.28, vr:(Math.random()-0.5)*0.17,
+    s:14+Math.random()*16, e:EMO[(Math.random()*EMO.length)|0]
+  });
+}
+function tick(){
+  if(!confettiOn) return;
+  cx.clearRect(0,0,cv.width,cv.height);
+  for(const p of parts){
+    p.x+=p.vx; p.y+=p.vy; p.rot+=p.vr;
+    if(p.y>cv.height+40){ p.y=-30; p.x=Math.random()*cv.width; }
+    cx.save(); cx.translate(p.x,p.y); cx.rotate(p.rot);
+    cx.font=p.s+'px serif'; cx.textAlign='center';
+    cx.fillText(p.e,0,0); cx.restore();
+  }
+  requestAnimationFrame(tick);
+}
+addEventListener('resize', sizeCanvas);
+
+/* ── 소리 ──
+   인트로 사운드는 항상 있고, bgm.mp3는 넣어뒀을 때만 잡힌다.
+   버튼 하나로 둘 다 끄고 켠다. */
+const bgm = $('#bgm'), sfxIntro = $('#sfx-intro'), soundBtn = $('#sound');
+let hasBgm = false, muted = false, bgmAllowed = false;
+bgm.addEventListener('canplay', ()=>{ hasBgm = true; });
+soundBtn.classList.add('show');
+soundBtn.onclick = ()=>{
+  muted = !muted;
+  bgm.muted = sfxIntro.muted = muted;
+  soundBtn.textContent = muted ? '🔇' : '🔊';
+  if(muted) stopVoice();
+  else if(bgmAllowed) startBgm();
+};
+
+/* 배경음악은 오프닝이 끝난 뒤에 깔지만, 재생 자체는 시작 버튼을 누른 그 순간에
+   볼륨 0으로 걸어둔다. 브라우저(특히 iframe 안)는 사용자가 누른 순간이 아니면
+   재생을 막기 때문에, 5초 뒤에 play()를 부르면 조용히 거절당한다.
+   여기서는 이미 돌고 있는 소리의 볼륨만 올린다. */
+let fadeTimer = null;
+function primeBgm(){          // 시작 버튼 클릭 안에서 호출
+  bgm.volume = 0;
+  bgm.play().catch(()=>{});
+}
+function startBgm(){
+  bgmAllowed = true;
+  if(muted) return;
+  if(bgm.paused) bgm.play().catch(()=>{});   /* 혹시 막혔었다면 다시 시도 */
+  clearInterval(fadeTimer);
+  const step = BGM_VOLUME / 25;
+  fadeTimer = setInterval(()=>{
+    bgm.volume = Math.min(BGM_VOLUME, bgm.volume + step);
+    if(bgm.volume >= BGM_VOLUME - 0.001) clearInterval(fadeTimer);
+  }, 60);
+}
+
+/* ── 짱구 목소리 ──
+   녹음 파일(a/vNN.mp3)이 있으면 그걸 쓰고, 없으면 브라우저 음성으로
+   대체한다. 브라우저 음성은 그대로 쓰면 어른 목소리라, 음높이를 크게 올리고
+   속도를 붙여 만화 꼬마 톤으로 만든다. */
+let koVoice = null;
+const voiceEl = $('#voice');
+function pickVoice(){
+  const vs = speechSynthesis.getVoices();
+  koVoice = vs.find(v => v.lang === 'ko-KR')
+         || vs.find(v => v.lang && v.lang.startsWith('ko'))
+         || null;
+}
+if(window.speechSynthesis){
+  pickVoice();
+  speechSynthesis.addEventListener('voiceschanged', pickVoice);
+}
+function stopVoice(){
+  if(window.speechSynthesis) speechSynthesis.cancel();
+  if(!voiceEl.paused) voiceEl.pause();
+}
+function speak(item){
+  if(!VOICE.on || muted || !item) return;
+  stopVoice();
+  const text = item.t || item.line || '';
+  if(!item.v) return tts(text, item);
+  const src = `a/${item.v}.mp3`;
+  if(!src) return tts(text, item);
+  let fellBack = false;
+  const fallback = ()=>{ if(!fellBack){ fellBack = true; tts(text, item); } };
+  voiceEl.onerror = fallback;
+  voiceEl.src = src;
+  voiceEl.play().catch(fallback);
+}
+function tts(text, item){
+  if(!VOICE.tts || !window.speechSynthesis || !text) return;
+  /* 자막의 말줄임(…, ..)은 분위기용이라 그대로 읽히면 어색하다. 공백으로 바꾼다. */
+  const u = new SpeechSynthesisUtterance(text.replace(/…|\.{2,}/g, ' '));
+  u.lang = VOICE.lang;
+  if(koVoice) u.voice = koVoice;
+  u.pitch = item && item.p != null ? item.p : VOICE.pitch;
+  u.rate  = item && item.r != null ? item.r : VOICE.rate;
+  speechSynthesis.speak(u);
+}
+
+/* ── 캐릭터 소개: 이미지든 영상이든 같은 자리에 ── */
+const castImg = $('#cast-img'), castName = $('#cast-name'), castLine = $('#cast-line');
+let castVideo = null;
+function setCast(src){
+  if(castVideo){ castVideo.remove(); castVideo = null; }
+  if(isVideo(src)){
+    castImg.style.display = 'none';
+    const v = document.createElement('video');
+    v.src = src; v.muted = true; v.loop = true;
+    v.playsInline = true; v.setAttribute('playsinline','');
+    v.className = 'cast-media';
+    castImg.after(v);
+    castVideo = v;
+    v.play().catch(()=>{});
+    return v;
+  }
+  castImg.style.display = '';
+  castImg.src = src;
+  return castImg;
+}
+
+/* ── 전체 흐름 ── */
+async function run(){
+  aborted = false;
+  $('#skip').classList.add('show');
+
+  /* 1. 오프닝 타이틀 — 인트로 영상 배경 + 인트로 사운드 */
+  show('title');
+  play($('#v-intro'));
+  if(!muted){ sfxIntro.currentTime = 0; sfxIntro.play().catch(()=>{}); }
+  $('#sub1').classList.add('on');
+  await wait(700); if(aborted) return;
+  $('#title').classList.add('on');
+  setTimeout(()=>{
+    stage.classList.add('shake');
+    setTimeout(()=>stage.classList.remove('shake'),350);
+  }, 390);
+  await wait(1500); if(aborted) return;
+  $('#sub2').classList.add('on');
+  /* 인트로 사운드가 5초라 여기까지 5.1초를 채운다.
+     3.9초에 끊으면 소리가 잘려 전환이 성급하게 느껴진다. */
+  await wait(2900); if(aborted) return;
+
+  /* 2. 캐릭터 소개 — 오프닝이 끝났으니 배경음악을 깔기 시작한다 */
+  show('cast');
+  startBgm();
+  /* 타이틀이 끝나자마자 "안녕하세요"가 나오면 숨 돌릴 틈이 없다. 한 박자 쉰다. */
+  await wait(500); if(aborted) return;
+  for(const c of CAST){
+    const el = setCast(c.img);
+    el.classList.remove('on'); void el.offsetWidth; el.classList.add('on');
+    castName.textContent = c.name;
+    castName.classList.remove('on'); void castName.offsetWidth;
+    await wait(260); if(aborted) return;
+    castName.classList.add('on');
+    /* 음성이 최대 2.99초라 3.3초는 줘야 말이 안 잘린다 */
+    await line(castLine, { t:c.line, v:c.v, p:c.p, r:c.r }, 3300);
+    if(aborted) return;
+  }
+
+  /* 3. 러닝 — 자막에 clip이 붙어 있으면 그 구간만 영상을 바꾼다 */
+  show('run');
+  const vRun = $('#v-run'), RUN_BASE = 'a/shin-run.mp4';
+  setClip(vRun, RUN_BASE);
+  await wait(500); if(aborted) return;
+  for(const t of RUN_CAPS){
+    setClip(vRun, t.clip || RUN_BASE);
+    await line($('#cap-run'), t, 3500);   /* 음성 최대 3.24초 */
+    if(aborted) return;
+  }
+
+  /* 4. 엉덩이 임팩트 */
+  show('wipe');
+  play($('#v-wipe'));
+  await wait(1850); if(aborted) return;
+
+  /* 5. 눈썹 씰룩 */
+  show('flirt');
+  play($('#v-flirt'));
+  await wait(400); if(aborted) return;
+  await line($('#cap-flirt'), FLIRT_LINE, 3000);   /* 음성 2.38초 */
+  if(aborted) return;
+
+  /* 6. 쑥쓰러움 */
+  show('shy');
+  play($('#v-shy'));
+  await wait(450); if(aborted) return;
+  for(const t of SHY_CAPS){
+    await line($('#cap-shy'), t, 2900);   /* 음성 최대 2.59초 */
+    if(aborted) return;
+  }
+
+  /* 6. 피날레 */
+  finale();
+}
+
+function finale(){
+  aborted = false;
+  $('#skip').classList.remove('show');
+  show('party');
+  $('#cap-party').textContent = PARTY_LINE.t;
+  speak(PARTY_LINE);
+  sizeCanvas();
+  parts = []; confettiOn = true; burst(46); tick();
+}
+
+/* ── 조작 ── */
+$('#start').onclick = ()=>{
+  $('#gate').classList.add('gone');
+  primeBgm();
+  /* 모바일은 사용자 조작 없이는 음성이 안 나온다. 이 클릭 안에서 한 번
+     빈 문장을 흘려 엔진을 깨워둬야 이후 대사가 정상 재생된다. */
+  if(window.speechSynthesis){
+    try{ speechSynthesis.speak(new SpeechSynthesisUtterance(' ')); }catch(e){}
+  }
+  run();
+};
+$('#skip').onclick = ()=>{
+  aborted = true; cancelWaits(); stopVoice();
+  finale();
+};
+$('#open').onclick = ()=>{
+  show('final');
+  $('#letter').classList.add('on');
+  /* 편지는 조용히 읽게 둔다. 음성 없음. */
+  stopVoice();
+  burst(40);
+};
+$('#replay').onclick = ()=>{
+  aborted = true; cancelWaits(); stopVoice();
+  confettiOn = false; parts = [];
+  $('#letter').classList.remove('on');
+  for(const id of ['sub1','sub2','title']) $('#'+id).classList.remove('on');
+  void $('#title').offsetWidth;
+  run();
+};
+
+fitStage();
+sizeCanvas();
+</script>
+</body>
+</html>
