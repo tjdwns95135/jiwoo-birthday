@@ -227,8 +227,61 @@ video.cast-media{
   filter:drop-shadow(0 12px 10px rgba(0,0,0,.28))}
 #confetti{position:absolute;inset:0;pointer-events:none}
 
-/* ── 편지 ── */
-#s-final{justify-content:center;gap:18px}
+/* ── 편지 + 사진 (옆으로 넘기는 두 장) ── */
+#s-final{justify-content:center;gap:14px}
+/* scroll-snap 으로 넘긴다. 직접 드래그를 구현하는 것보다 폰에서 훨씬 자연스럽다. */
+.pager{
+  width:100%;display:flex;
+  overflow-x:auto;overflow-y:hidden;
+  scroll-snap-type:x mandatory;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+}
+.pager::-webkit-scrollbar{display:none}
+.page{
+  flex:0 0 100%;scroll-snap-align:center;
+  display:grid;place-items:center;
+}
+/* 넘길 게 더 있다는 표시 */
+.pager-hint{
+  display:flex;align-items:center;gap:8px;
+  font-size:13px;color:#fff;
+  text-shadow:0 2px 0 rgba(0,0,0,.35);
+}
+.pager-hint .dot{
+  width:8px;height:8px;border-radius:50%;
+  background:rgba(255,255,255,.45);
+  transition:background .25s,transform .25s;
+}
+.pager-hint .dot.on{background:#fff;transform:scale(1.25)}
+.pager-hint .swipe{
+  margin-left:4px;opacity:.9;
+  animation:nudge 1.8s ease-in-out infinite;
+}
+.pager-hint.seen .swipe{display:none}
+@keyframes nudge{0%,100%{transform:translateX(0)}55%{transform:translateX(5px)}}
+
+/* 2장: 곡선 글씨 + 사진 */
+.card2{
+  width:100%;background:var(--cream);
+  border:4px solid var(--ink);border-radius:20px;
+  padding:16px 14px 18px;
+  box-shadow:0 12px 0 rgba(0,0,0,.24);
+  display:flex;flex-direction:column;align-items:center;gap:10px;
+}
+.arc{width:100%;height:auto;overflow:visible;flex:none}
+.arc-t{
+  font-family:var(--title);font-size:31px;
+  fill:var(--pink);
+  stroke:var(--ink);stroke-width:7;stroke-linejoin:round;
+  paint-order:stroke fill;      /* 외곽선을 글자 아래로 깔아야 획이 안 먹힌다 */
+}
+.photo{
+  width:100%;aspect-ratio:3/4;object-fit:cover;
+  border:4px solid var(--ink);border-radius:16px;
+  background:var(--sky-hi);
+  box-shadow:0 6px 0 rgba(0,0,0,.2);
+}
 .letter{
   width:100%;background:var(--cream);
   border:4px solid var(--ink);border-radius:20px;
@@ -415,10 +468,29 @@ video.cast-media{
 
   <!-- 7. 편지 -->
   <section class="scene" id="s-final">
-    <div class="letter" id="letter">
-      <h2 id="final-h"></h2>
-      <p id="final-body"></p>
-      <div class="from" id="final-from"></div>
+    <!-- 옆으로 넘기는 두 장. 1장 편지, 2장 사진 -->
+    <div class="pager" id="pager">
+      <div class="page">
+        <div class="letter" id="letter">
+          <h2 id="final-h"></h2>
+          <p id="final-body"></p>
+          <div class="from" id="final-from"></div>
+        </div>
+      </div>
+      <div class="page">
+        <div class="card2">
+          <svg class="arc" viewBox="0 0 340 104" aria-label="우주 최강 미녀 심지우">
+            <defs><path id="arc-p" d="M12,96 Q170,2 328,96"></path></defs>
+            <text class="arc-t"><textPath href="#arc-p" startOffset="50%"
+              text-anchor="middle">우주 최강 미녀 심지우</textPath></text>
+          </svg>
+          <img class="photo" id="photo" src="a/photo-jiwoo.jpg" alt="지우">
+        </div>
+      </div>
+    </div>
+    <div class="pager-hint" id="pager-hint">
+      <span class="dot on"></span><span class="dot"></span>
+      <span class="swipe">옆으로 넘겨보세요</span>
     </div>
     <button class="btn" id="replay">↺ 다시 보기</button>
   </section>
@@ -954,8 +1026,21 @@ $('#skip').onclick = ()=>{
   runId++; cancelWaits(); stopVoice();
   finale();
 };
+/* ── 편지/사진 넘김 ──
+   직접 드래그를 구현하지 않고 scroll-snap 에 맡긴다. 폰에서 훨씬 자연스럽다.
+   여기서는 지금 몇 번째 장인지 점으로만 표시한다. */
+const pager = $('#pager'), pagerHint = $('#pager-hint');
+pager.addEventListener('scroll', ()=>{
+  const i = Math.round(pager.scrollLeft / Math.max(1, pager.clientWidth));
+  pagerHint.querySelectorAll('.dot').forEach((d, n)=> d.classList.toggle('on', n === i));
+  if(i > 0) pagerHint.classList.add('seen');   /* 한 번 넘기면 안내 문구는 지운다 */
+}, {passive:true});
+
 $('#open').onclick = ()=>{
   show('final');
+  pager.scrollLeft = 0;
+  pagerHint.classList.remove('seen');
+  pagerHint.querySelectorAll('.dot').forEach((d, n)=> d.classList.toggle('on', n === 0));
   $('#letter').classList.add('on');
   /* 편지는 조용히 읽게 둔다. 음성 없음. */
   stopVoice();
