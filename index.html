@@ -78,11 +78,19 @@ body{
    원본이 640x480이라 전체화면으로 늘리면 2.5배 확대돼 뭉갠다.
    가로폭에 맞춘 4:3 밴드면 확대율 1.2배 이하라 선명하게 유지된다. */
 .panel{
+  position:relative;
   width:100%;aspect-ratio:4/3;flex:none;
   border:5px solid var(--ink);border-radius:16px;overflow:hidden;background:#000;
-  box-shadow:0 10px 0 rgba(0,0,0,.24),inset 0 0 0 4px var(--cream);
+  box-shadow:0 10px 0 rgba(0,0,0,.24);
 }
 .panel video{width:100%;height:100%;object-fit:cover;display:block}
+/* 크림색 안쪽 테두리를 inset box-shadow 로 주면 영상이 로드되는 순간
+   그 위를 덮어버려 테두리가 벗겨졌다 씌워졌다 한다. 영상 위에 얹는다. */
+.panel::after{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  box-shadow:inset 0 0 0 4px var(--cream);
+  border-radius:11px;
+}
 
 /* ── 오프닝 타이틀 장면 ──
    사용자가 준 인트로 영상(1920x1080)이 배경. 가운데가 비어 있어 타이틀 자리가 된다.
@@ -150,9 +158,13 @@ body{
 .cast-media.on{animation:castIn .5s cubic-bezier(.2,1.6,.4,1) forwards}
 /* PNG 소개컷은 배경이 투명해 캐릭터만 뜨지만, 영상 컷은 원본 배경이 남는다.
    테두리를 둘러 "액자에 넣은 사진"으로 보이게 해야 나란히 놔도 안 어색하다. */
+/* video 는 대체 요소라 ::after 를 못 붙이고, inset box-shadow 는 영상에 덮인다.
+   안쪽 크림 테두리는 border, 바깥 검정은 outline 으로 준다. 둘 다 안 덮인다. */
 video.cast-media{
-  border:5px solid var(--ink);background:#000;
-  box-shadow:0 8px 0 rgba(0,0,0,.22),inset 0 0 0 4px var(--cream);
+  border:4px solid var(--cream);
+  outline:4px solid var(--ink);
+  background:#000;
+  box-shadow:0 8px 0 rgba(0,0,0,.22);
 }
 @keyframes castIn{to{opacity:1;transform:scale(1) rotate(0)}}
 #cast-name{
@@ -213,7 +225,7 @@ video.cast-media{
   animation:bob 1.5s ease-in-out infinite;
 }
 .btn:active{transform:translateY(6px);box-shadow:0 1px 0 var(--ink);animation:none}
-@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
 
 /* ── 시작 화면 ── */
 #gate{
@@ -431,8 +443,10 @@ const SHY_CAPS = [
 /* 피날레 대사 */
 const PARTY_LINE = { t:'준비됐어? 눌러봐!', v:'v10', p:1.95, r:1.1 };
 
-/* 오프닝이 끝난 뒤 깔리는 배경음악 크기 (0~1). 대사를 덮지 않게 작게. */
-const BGM_VOLUME = 0.22;
+/* 배경음악 음량은 파일 자체를 -16dB 로 인코딩해 맞춰 놓았다.
+   (iOS 가 audio.volume 을 무시해서 코드로는 못 줄인다)
+   여기 값은 데스크톱 페이드인의 목표치일 뿐 1 로 둔다. */
+const BGM_VOLUME = 1;
 
 /* ══════════════════════════════════════════════════════════
    ▲▲▲ 여기까지 ▲▲▲
@@ -480,14 +494,23 @@ function show(name){
    카톡·인스타 같은 인앱 브라우저는 자기 상단/하단 바를 빼지 않아서
    100dvh 가 실제 보이는 높이보다 크게 나온다. 그러면 아래가 잘린다.
    visualViewport(있으면) 또는 innerHeight 로 실제 높이를 재서 직접 넣는다. */
-function fitStage(){
-  const h = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
-  if(h) stage.style.height = h + 'px';
+let fittedH = 0, fitTimer = null;
+function fitStage(force){
+  const h = window.innerHeight;
+  if(!h) return;
+  /* 폰은 스크롤할 때 주소창이 들락거리며 높이가 몇십 px씩 계속 바뀐다.
+     그때마다 다시 맞추면 화면 전체가 위아래로 덜컹거린다.
+     회전처럼 확실히 달라졌을 때만(80px 초과) 다시 잡는다. */
+  if(!force && fittedH && Math.abs(h - fittedH) < 80) return;
+  fittedH = h;
+  stage.style.height = h + 'px';
   try{ sizeCanvas(); }catch(e){}
 }
-addEventListener('resize', fitStage);
-addEventListener('orientationchange', ()=> setTimeout(fitStage, 250));
-if(window.visualViewport) window.visualViewport.addEventListener('resize', fitStage);
+addEventListener('resize', ()=>{
+  clearTimeout(fitTimer);
+  fitTimer = setTimeout(()=>fitStage(false), 200);
+});
+addEventListener('orientationchange', ()=> setTimeout(()=>fitStage(true), 300));
 
 const sleepers = new Set();
 function wait(ms){
@@ -581,7 +604,12 @@ soundBtn.onclick = ()=>{
    재생을 막기 때문에, 5초 뒤에 play()를 부르면 조용히 거절당한다.
    여기서는 이미 돌고 있는 소리의 볼륨만 올린다. */
 let fadeTimer = null;
+/* iOS 는 audio.volume 을 무시한다(읽기 전용). 그래서 volume 0 으로 깔아두면
+   아이폰에서는 인트로와 배경음악이 최대 음량으로 겹쳐 나온다.
+   muted 는 어디서나 통하므로 muted 로 재우고, 실제 음량은 파일 자체를
+   -16dB 로 인코딩해서 맞춘다(build_site.py). */
 function primeBgm(){          // 시작 버튼 클릭 안에서 호출
+  bgm.muted = true;
   bgm.volume = 0;
   bgm.play().catch(()=>{});
 }
@@ -589,8 +617,9 @@ function startBgm(){
   bgmAllowed = true;
   if(muted) return;
   if(bgm.paused) bgm.play().catch(()=>{});   /* 혹시 막혔었다면 다시 시도 */
+  bgm.muted = false;
   clearInterval(fadeTimer);
-  const step = BGM_VOLUME / 25;
+  const step = BGM_VOLUME / 25;              /* 데스크톱에서만 실제로 먹는 페이드 */
   fadeTimer = setInterval(()=>{
     bgm.volume = Math.min(BGM_VOLUME, bgm.volume + step);
     if(bgm.volume >= BGM_VOLUME - 0.001) clearInterval(fadeTimer);
