@@ -9,7 +9,7 @@
 <meta property="og:type" content="website">
 <meta property="og:title" content="오늘은 지우의 생일이래요">
 <meta property="og:description" content="짱구가 지우한테 전하는 생일 축하">
-<meta property="og:image" content="https://tjdwns95135.github.io/jiwoo-birthday/a/og-v2.png?b=08282353">
+<meta property="og:image" content="https://tjdwns95135.github.io/jiwoo-birthday/a/og-v2.png?b=08282359">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
@@ -63,23 +63,27 @@ body{
 
 /* ── 흘러가는 구름 ── */
 .clouds{position:absolute;inset:0;overflow:hidden;pointer-events:none}
-/* drop-shadow 필터는 매 프레임 다시 계산돼서 구름이 끊긴다.
-   같은 느낌은 아래쪽에 반투명 테두리 한 겹으로 낸다(그리기 비용 없음).
-   will-change 로 별도 레이어에 올려 다른 요소 repaint 와 분리한다. */
-.cloud{position:absolute;left:100%;background:var(--cloud);border-radius:50%;
-  box-shadow:0 7px 0 rgba(150,195,235,.45);
-  will-change:transform;transform:translateZ(0)}
+/* 구름 5개를 각각 움직이면 합성 레이어가 5장 생기고, 그 전부가
+   overflow:hidden 안에 들어 있다. iOS WKWebView 는 이 조합에서 매 프레임
+   레이어마다 클리핑을 다시 하느라 눈에 띄게 끊긴다.
+   구름을 하나의 긴 띠에 그려 넣고 그 띠 하나만 움직인다 -> 레이어 1장.
+   띠를 화면 두 배 폭으로 만들고 절반만 이동시키면 이음매 없이 반복된다. */
+.cloud-strip{
+  position:absolute;top:0;left:0;
+  width:200%;height:100%;
+  will-change:transform;
+  animation:strip 64s linear infinite;
+}
+.cloud{position:absolute;background:var(--cloud);border-radius:50%;
+  box-shadow:0 7px 0 rgba(150,195,235,.45)}
 .cloud::before,.cloud::after{content:'';position:absolute;background:var(--cloud);border-radius:50%}
 .cloud::before{width:64%;height:112%;left:-22%;top:4%}
 .cloud::after{width:52%;height:96%;right:-16%;top:14%}
-/* 오른쪽 화면 밖에서 시작해 왼쪽 화면 밖까지 건너간다.
-   이동 거리는 JS 가 픽셀로 계산해 --travel 로 넘긴다.
-   여기서 cqw 같은 상대 단위를 쓰면 브라우저가 매 프레임 컨테이너 크기를
-   다시 재느라 움직임이 끊긴다. */
-@keyframes drift{
-  from{transform:translateX(0)}
-  to{transform:translateX(var(--travel))}
+@keyframes strip{
+  from{transform:translate3d(0,0,0)}
+  to{transform:translate3d(-50%,0,0)}
 }
+@media (prefers-reduced-motion:reduce){ .cloud-strip{animation:none} }
 
 /* ── 잔디 언덕 (하단 고정) ── */
 .hill{position:absolute;left:-10%;width:120%;height:34%;bottom:-14%;
@@ -196,8 +200,9 @@ body{
      매 프레임 그림자를 새로 그리느라 메인 스레드가 막히고 배경 구름이 끊긴다. */
   opacity:0;transform:scale(.6) rotate(-8deg);
 }
-.cast-media.on{animation:castIn .5s cubic-bezier(.2,1.6,.4,1) forwards;
-  will-change:transform,opacity}
+/* will-change 를 두면 0.5초 등장 애니메이션 때문에 움직이는 APNG 가 장면 내내
+   별도 레이어로 떠 있게 된다. iOS 에서 그 레이어가 계속 비용을 문다. */
+.cast-media.on{animation:castIn .5s cubic-bezier(.2,1.6,.4,1) forwards}
 /* PNG 소개컷은 배경이 투명해 캐릭터만 뜨지만, 영상 컷은 원본 배경이 남는다.
    테두리를 둘러 "액자에 넣은 사진"으로 보이게 해야 나란히 놔도 안 어색하다. */
 /* video 는 대체 요소라 ::after 를 못 붙이고, inset box-shadow 는 영상에 덮인다.
@@ -361,7 +366,6 @@ video.cast-media{
   padding:14px 34px;cursor:pointer;
   box-shadow:0 7px 0 var(--ink);
   transition:transform .1s,box-shadow .1s;
-  will-change:transform;      /* 크기 애니메이션을 별도 레이어에서 처리 */
   /* 위아래로 튕기면 "흔들리다 멈췄다" 처럼 보인다. 키프레임 두 개짜리
      ease-in-out 은 양 끝에서 감속하며 멎기 때문이다.
      자리를 옮기지 않고 크기만 아주 조금 변하게 해서 눈에만 띄게 한다. */
@@ -441,7 +445,7 @@ video.cast-media{
 
   <!-- 1. 오프닝 타이틀 -->
   <section class="scene" id="s-title">
-    <video id="v-intro" src="a/intro.mp4?b=08282353" muted playsinline loop preload="auto"></video>
+    <video id="v-intro" src="a/intro.mp4?b=08282359" muted playsinline loop preload="auto"></video>
     <div class="sub dark" id="sub1">떡잎마을에서 알려드립니다</div>
     <h1 class="bigtitle" id="title">오늘은<br>지우의<br>생일이래요</h1>
     <div class="sub dark" id="sub2">— 오늘의 주인공 등장 —</div>
@@ -454,13 +458,13 @@ video.cast-media{
          그 순간부터 받기 시작해서 빈 화면이 잠깐 뜬다. -->
     <div class="cast-slot">
       <img   id="c-shin"    class="cast-media" alt="" style="display:none"
-        src="a/shin-front-alpha.png?b=08282353">
+        src="a/shin-front-alpha.png?b=08282359">
       <video id="v-shiro"   class="cast-media" style="display:none"
-        src="a/shiro.mp4?b=08282353" muted playsinline loop preload="auto"></video>
+        src="a/shiro.mp4?b=08282359" muted playsinline loop preload="auto"></video>
       <img   id="c-friends" class="cast-media" alt="" style="display:none"
-        src="a/friends-alpha.png?b=08282353">
+        src="a/friends-alpha.png?b=08282359">
       <img   id="c-mask"    class="cast-media" alt="" style="display:none"
-        src="a/mask-alpha.png?b=08282353">
+        src="a/mask-alpha.png?b=08282359">
     </div>
     <div id="cast-name"></div>
     <div class="cap-slot"><div class="caption" id="cast-line"></div></div>
@@ -470,9 +474,9 @@ video.cast-media{
   <section class="scene" id="s-run">
     <!-- 두 클립을 겹쳐 두고 표시만 바꾼다. src 를 갈아끼우면 그 순간 다시 받는다. -->
     <div class="panel">
-      <video id="v-run" src="a/shin-run.mp4?b=08282353"
+      <video id="v-run" src="a/shin-run.mp4?b=08282359"
         muted playsinline loop preload="auto"></video>
-      <video id="v-news" src="a/shin-news.mp4?b=08282353"
+      <video id="v-news" src="a/shin-news.mp4?b=08282359"
         muted playsinline loop preload="auto" style="display:none"></video>
     </div>
     <div class="cap-slot"><div class="caption" id="cap-run"></div></div>
@@ -480,20 +484,20 @@ video.cast-media{
 
   <!-- 4. 엉덩이 임팩트 -->
   <section class="scene" id="s-wipe">
-    <video id="v-wipe" src="a/shin-butt.mp4?b=08282353"
+    <video id="v-wipe" src="a/shin-butt.mp4?b=08282359"
       muted playsinline preload="auto"></video>
   </section>
 
   <!-- 5. 눈썹 씰룩 -->
   <section class="scene" id="s-flirt">
-    <div class="panel"><video id="v-flirt" src="a/shin-eyebrow.mp4?b=08282353"
+    <div class="panel"><video id="v-flirt" src="a/shin-eyebrow.mp4?b=08282359"
       muted playsinline loop preload="auto"></video></div>
     <div class="cap-slot"><div class="caption" id="cap-flirt"></div></div>
   </section>
 
   <!-- 6. 쑥쓰러움 -->
   <section class="scene" id="s-shy">
-    <div class="panel"><video id="v-shy" src="a/shin-shy.mp4?b=08282353"
+    <div class="panel"><video id="v-shy" src="a/shin-shy.mp4?b=08282359"
       muted playsinline loop preload="auto"></video></div>
     <div class="cap-slot"><div class="caption" id="cap-shy"></div></div>
   </section>
@@ -501,7 +505,7 @@ video.cast-media{
   <!-- 6. 피날레 -->
   <section class="scene" id="s-party">
     <canvas id="confetti"></canvas>
-    <img id="dancer" src="a/shin-dance-alpha.png?b=08282353" alt="춤추는 짱구">
+    <img id="dancer" src="a/shin-dance-alpha.png?b=08282359" alt="춤추는 짱구">
     <div class="caption on" id="cap-party">준비됐어? 눌러봐!</div>
     <button class="btn" id="open">🎂 열어보기</button>
   </section>
@@ -524,7 +528,7 @@ video.cast-media{
             <text class="arc-t"><textPath href="#arc-p" startOffset="50%"
               text-anchor="middle">우주 최강 미녀 심지우</textPath></text>
           </svg>
-          <img class="photo" id="photo" src="a/photo-e73799067b891d63.jpg?b=08282353" alt="지우">
+          <img class="photo" id="photo" src="a/photo-e73799067b891d63.jpg?b=08282359" alt="지우">
         </div>
       </div>
     </div>
@@ -540,7 +544,7 @@ video.cast-media{
     <!-- 3층 구조: 원본 그림 → 간판(원래 로고를 덮음) → 간판에 걸친 캐릭터 다시 얹기.
          원본을 지우지 않으니 번지거나 얼룩이 남지 않는다. -->
     <div class="cover">
-      <img class="cover-base" src="a/title-card.png?b=08282353" alt="">
+      <img class="cover-base" src="a/title-card.png?b=08282359" alt="">
       <div class="logo-board"><span>지우는 못말려</span></div>
     </div>
     <button class="btn" id="start">눌러줘!</button>
@@ -549,11 +553,11 @@ video.cast-media{
 
   <button id="skip">건너뛰기 ▸</button>
   <!-- 인트로 사운드(5초)는 타이틀 장면에 한 번. bgm.mp3는 넣어두면 자동으로 잡힌다. -->
-  <audio id="sfx-intro" src="a/intro.mp3?b=08282353" preload="auto"></audio>
+  <audio id="sfx-intro" src="a/intro.mp3?b=08282359" preload="auto"></audio>
   <!-- 대사는 이 엘리먼트 하나를 돌려 쓴다. 매번 new Audio() 로 만들면
        폰 브라우저가 "사용자가 누른 적 없는 새 소리"로 보고 막을 수 있다. -->
   <audio id="voice" preload="auto"></audio>
-  <audio id="bgm" src="a/bgm.mp3?b=08282353" loop preload="auto"></audio>
+  <audio id="bgm" src="a/bgm.mp3?b=08282359" loop preload="auto"></audio>
 </div>
 
 <script>
@@ -590,7 +594,7 @@ const VOICE = {
 };
 
 /* 캐릭터 소개 컷. 짱구 말투로 한 줄씩.
-   v: 녹음 파일 이름(a/v01.mp3?b=08282353), p/r: 그 줄만 음높이·속도 조정 */
+   v: 녹음 파일 이름(a/v01.mp3?b=08282359), p/r: 그 줄만 음높이·속도 조정 */
 const CAST = [
   { el:'#c-shin',    name:'짱구',       line:'안녕하세요~ 저는 짱구예요',        v:'v01', p:1.9 },
   { el:'#v-shiro',   name:'흰둥이',     line:'얘는 우리 흰둥이고요',             v:'v02' },
@@ -705,23 +709,23 @@ if(location.search.indexOf('perf=1') >= 0){
    표지를 보고 있는 동안(사용자가 버튼 누르기 전) 전부 캐시에 채워둔다. */
 (function prefetch(){
   const list = [
-    'a/intro.mp4?b=08282353',
-    'a/shin-run.mp4?b=08282353',
-    'a/shin-news.mp4?b=08282353',
-    'a/shin-butt.mp4?b=08282353',
-    'a/shin-eyebrow.mp4?b=08282353',
-    'a/shin-shy.mp4?b=08282353',
-    'a/shiro.mp4?b=08282353',
-    'a/intro.mp3?b=08282353',
+    'a/intro.mp4?b=08282359',
+    'a/shin-run.mp4?b=08282359',
+    'a/shin-news.mp4?b=08282359',
+    'a/shin-butt.mp4?b=08282359',
+    'a/shin-eyebrow.mp4?b=08282359',
+    'a/shin-shy.mp4?b=08282359',
+    'a/shiro.mp4?b=08282359',
+    'a/intro.mp3?b=08282359',
     /* 소개 컷 APNG. 떡잎방범대가 956KB 로 제일 크다. */
-    'a/shin-front-alpha.png?b=08282353',
-    'a/friends-alpha.png?b=08282353',
-    'a/mask-alpha.png?b=08282353',
-    'a/shin-dance-alpha.png?b=08282353',
-    'a/photo-e73799067b891d63.jpg?b=08282353'
+    'a/shin-front-alpha.png?b=08282359',
+    'a/friends-alpha.png?b=08282359',
+    'a/mask-alpha.png?b=08282359',
+    'a/shin-dance-alpha.png?b=08282359',
+    'a/photo-e73799067b891d63.jpg?b=08282359'
   ];
   for(let i = 0; i <= 11; i++){   /* v00 = 오프닝 타이틀 대사 */
-    list.push('a/v' + String(i).padStart(2,'0') + '.mp3?b=08282353');
+    list.push('a/v' + String(i).padStart(2,'0') + '.mp3?b=08282359');
   }
   for(const u of list){
     fetch(u).then(r => r.blob()).catch(()=>{});
@@ -739,24 +743,31 @@ $('#final-body').textContent = LETTER.body;
 $('#final-from').textContent = LETTER.from;
 
 /* ── 구름 ── */
+/* 구름 개수. 0 으로 두면 구름이 아예 없어진다(성능이 계속 문제일 때의 탈출구). */
+const CLOUD_COUNT = 5;
+
 (function(){
   const wrap = $('#clouds');
-  const stageW = stage.getBoundingClientRect().width || 430;
-  for(let i=0;i<5;i++){                       /* 5개면 충분하다. 많을수록 합성 비용만 는다 */
-    const c = document.createElement('div');
-    c.className = 'cloud';
-    const w = 70 + Math.random()*95;
-    /* 오른쪽 화면 밖(left:100%)에서 시작해 자기 너비까지 완전히 빠져나간다 */
-    const travel = -(stageW + w + 20);
-    const dur = 26 + Math.random() * 26;
-    c.style.cssText =
-      `width:${w}px;height:${w*0.42}px;top:${3+Math.random()*55}%;` +
-      `--travel:${travel}px;` +
-      `opacity:${(0.55+Math.random()*0.4).toFixed(2)};` +
-      /* 시작 지연을 주기 전체에 흩어야 한쪽에 몰리지 않는다 */
-      `animation:drift ${dur}s linear ${-Math.random()*dur}s infinite`;
-    wrap.appendChild(c);
+  if(!CLOUD_COUNT) return;
+  const strip = document.createElement('div');
+  strip.className = 'cloud-strip';
+  /* 띠는 화면 두 배 폭이다. 왼쪽 절반에 구름을 뿌리고 오른쪽 절반에 똑같이
+     복제하면, 절반만큼 밀었을 때 처음과 같은 그림이 되어 이음매가 없다. */
+  for(let i = 0; i < CLOUD_COUNT; i++){
+    const w = 70 + Math.random() * 95;
+    const left = Math.random() * 50;              /* 띠 기준 0~50% */
+    const top = 3 + Math.random() * 55;
+    const op = (0.55 + Math.random() * 0.4).toFixed(2);
+    for(const off of [0, 50]){                    /* 원본 + 복제본 */
+      const c = document.createElement('div');
+      c.className = 'cloud';
+      c.style.cssText =
+        `width:${w}px;height:${w * 0.42}px;` +
+        `left:${left + off}%;top:${top}%;opacity:${op}`;
+      strip.appendChild(c);
+    }
   }
+  wrap.appendChild(strip);
 })();
 
 /* ── 유틸 ── */
@@ -937,7 +948,7 @@ function startBgm(){
 }
 
 /* ── 짱구 목소리 ──
-   녹음 파일(a/vNN.mp3?b=08282353)이 있으면 그걸 쓰고, 없으면 브라우저 음성으로
+   녹음 파일(a/vNN.mp3?b=08282359)이 있으면 그걸 쓰고, 없으면 브라우저 음성으로
    대체한다. 브라우저 음성은 그대로 쓰면 어른 목소리라, 음높이를 크게 올리고
    속도를 붙여 만화 꼬마 톤으로 만든다. */
 let koVoice = null;
@@ -961,7 +972,7 @@ function speak(item){
   stopVoice();
   const text = item.t || item.line || '';
   if(!item.v) return tts(text, item);
-  const src = `a/${item.v}.mp3?b=08282353`;
+  const src = `a/${item.v}.mp3?b=08282359`;
   if(!src) return tts(text, item);
   let fellBack = false;
   const fallback = ()=>{ if(!fellBack){ fellBack = true; tts(text, item); } };
