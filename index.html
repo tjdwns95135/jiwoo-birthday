@@ -284,7 +284,9 @@ video.cast-media{
   left:4.06%;top:61.58%;width:92.81%;height:31.03%;
   background:#0D71AD;
   border:3px solid #00466E;border-radius:10px;
-  display:grid;place-items:center;
+  /* 흰둥이가 간판 위쪽을 덮고 있어서, 글자를 아래쪽에 붙인다. */
+  display:grid;place-items:end center;
+  padding-bottom:7%;
 }
 .logo-board span{
   font-family:var(--title);
