@@ -52,12 +52,19 @@ body{
 
 /* ── 흘러가는 구름 ── */
 .clouds{position:absolute;inset:0;overflow:hidden;pointer-events:none}
-.cloud{position:absolute;background:var(--cloud);border-radius:50%;
+.cloud{position:absolute;left:0;background:var(--cloud);border-radius:50%;
   filter:drop-shadow(0 7px 0 rgba(150,195,235,.45))}
 .cloud::before,.cloud::after{content:'';position:absolute;background:var(--cloud);border-radius:50%}
 .cloud::before{width:64%;height:112%;left:-22%;top:4%}
 .cloud::after{width:52%;height:96%;right:-16%;top:14%}
-@keyframes drift{from{transform:translateX(130%)}to{transform:translateX(-180%)}}
+/* translateX 의 % 는 화면이 아니라 "구름 자기 너비" 기준이다.
+   130% -> -180% 로 두면 100px 짜리 구름이 310px 만 움직이고 끝나서,
+   화면을 건너지 못하고 한쪽에서 깜빡깜빡 나타났다 사라진다.
+   스테이지 너비(cqw)를 써서 오른쪽 밖 -> 왼쪽 밖까지 실제로 건너가게 한다. */
+@keyframes drift{
+  from{transform:translateX(100cqw)}
+  to{transform:translateX(-100%)}
+}
 
 /* ── 잔디 언덕 (하단 고정) ── */
 .hill{position:absolute;left:-10%;width:120%;height:34%;bottom:-14%;
@@ -509,10 +516,13 @@ $('#final-from').textContent = LETTER.from;
     const c = document.createElement('div');
     c.className = 'cloud';
     const w = 70 + Math.random()*95;
+    /* 건너는 거리가 늘었으니 시간도 늘려야 속도가 그대로다.
+       시작 지연은 주기 전체에 걸쳐 흩어 놓아야 한쪽에 몰리지 않는다. */
+    const dur = 26 + Math.random() * 26;
     c.style.cssText =
       `width:${w}px;height:${w*0.42}px;top:${3+Math.random()*55}%;` +
       `opacity:${(0.55+Math.random()*0.4).toFixed(2)};` +
-      `animation:drift ${18+Math.random()*22}s linear ${-Math.random()*30}s infinite`;
+      `animation:drift ${dur}s linear ${-Math.random()*dur}s infinite`;
     wrap.appendChild(c);
   }
 })();
