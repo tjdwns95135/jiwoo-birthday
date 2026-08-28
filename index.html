@@ -80,7 +80,9 @@ body{
 .panel{
   position:relative;
   width:100%;aspect-ratio:4/3;flex:none;
-  border:5px solid var(--ink);border-radius:16px;overflow:hidden;background:#000;
+  border:5px solid var(--ink);border-radius:16px;overflow:hidden;
+  /* 영상이 아직 안 왔을 때 보이는 색. 검정이면 구멍처럼 보인다. */
+  background:var(--sky-hi);
   box-shadow:0 10px 0 rgba(0,0,0,.24);
 }
 .panel video{width:100%;height:100%;object-fit:cover;display:block}
@@ -163,7 +165,7 @@ body{
 video.cast-media{
   border:4px solid var(--cream);
   outline:4px solid var(--ink);
-  background:#000;
+  background:var(--sky-hi);
   box-shadow:0 8px 0 rgba(0,0,0,.22);
 }
 @keyframes castIn{to{opacity:1;transform:scale(1) rotate(0)}}
@@ -177,11 +179,13 @@ video.cast-media{
 #cast-name.on{opacity:1;transform:translateY(0)}
 
 /* ── 엉덩이 전환: 화면을 꽉 채워 다음 장면을 덮는다 ── */
-#s-wipe{padding:0;background:#000}
+#s-wipe{padding:0;background:var(--sky-hi)}
 #s-wipe video{width:100%;height:100%;object-fit:cover}
 
 /* ── 피날레 ── */
-#s-party{justify-content:flex-end;padding-bottom:9vh;gap:14px}
+/* vh 를 쓰면 폰 주소창이 들락거릴 때마다 값이 바뀌어 버튼이 위아래로 밀린다.
+   스테이지 높이는 JS로 고정해 뒀으니 여기는 고정 px 로 둔다. */
+#s-party{justify-content:flex-end;padding-bottom:64px;gap:14px}
 #dancer{width:min(60cqw,260px);height:auto;
   filter:drop-shadow(0 12px 10px rgba(0,0,0,.28))}
 #confetti{position:absolute;inset:0;pointer-events:none}
@@ -194,7 +198,7 @@ video.cast-media{
   padding:26px 22px 26px;
   box-shadow:0 12px 0 rgba(0,0,0,.24);
   transform:scale(.85) rotate(-1.5deg);opacity:0;
-  max-height:66dvh;overflow-y:auto;
+  max-height:66%;overflow-y:auto;   /* dvh 는 주소창 따라 흔들린다 */
 }
 .letter.on{animation:pop .6s cubic-bezier(.2,1.5,.4,1) forwards}
 @keyframes pop{to{transform:scale(1) rotate(-1.5deg);opacity:1}}
@@ -461,6 +465,29 @@ const BGM_VOLUME = 1;
 
 const $ = s => document.querySelector(s);
 const stage = $('#stage');
+
+/* ── 미리 받아두기 ──
+   폰 브라우저는 <video preload="auto"> 를 데이터 절약 때문에 대체로 무시한다.
+   그래서 장면이 바뀌는 순간에야 받기 시작해 검은 화면이 잠깐 뜬다.
+   표지를 보고 있는 동안(사용자가 버튼 누르기 전) 전부 캐시에 채워둔다. */
+(function prefetch(){
+  const list = [
+    'a/intro.mp4',
+    'a/shin-run.mp4',
+    'a/shin-news.mp4',
+    'a/shin-butt.mp4',
+    'a/shin-eyebrow.mp4',
+    'a/shin-shy.mp4',
+    'a/shiro.mp4',
+    'a/intro.mp3'
+  ];
+  for(let i = 1; i <= 11; i++){
+    list.push('a/v' + String(i).padStart(2,'0') + '.mp3');
+  }
+  for(const u of list){
+    fetch(u).then(r => r.blob()).catch(()=>{});
+  }
+})();
 const scenes = {
   title:$('#s-title'), cast:$('#s-cast'), run:$('#s-run'),
   wipe:$('#s-wipe'), flirt:$('#s-flirt'), shy:$('#s-shy'),
