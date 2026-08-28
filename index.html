@@ -219,9 +219,10 @@ video.cast-media{
 #s-wipe video{width:100%;height:100%;object-fit:cover}
 
 /* ── 피날레 ── */
-/* vh 를 쓰면 폰 주소창이 들락거릴 때마다 값이 바뀌어 버튼이 위아래로 밀린다.
-   스테이지 높이는 JS로 고정해 뒀으니 여기는 고정 px 로 둔다. */
-#s-party{justify-content:flex-end;padding-bottom:92px;gap:14px}
+/* 아래 끝에 붙이면 카톡·인스타 인앱 브라우저의 하단 툴바에 가려진다.
+   그 툴바 높이는 innerHeight 에 안 잡혀서 계산으로는 피할 수 없다.
+   가운데로 모으면 아래가 100px 쯤 잘려도 버튼이 살아 있는다. */
+#s-party{justify-content:center;gap:16px}
 #dancer{width:min(60cqw,260px);height:auto;
   filter:drop-shadow(0 12px 10px rgba(0,0,0,.28))}
 #confetti{position:absolute;inset:0;pointer-events:none}
