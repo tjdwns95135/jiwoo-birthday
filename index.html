@@ -92,7 +92,8 @@ body{
   background:var(--sky-hi);
   box-shadow:0 10px 0 rgba(0,0,0,.24);
 }
-.panel video{width:100%;height:100%;object-fit:cover;display:block}
+/* 클립 두 개를 겹쳐 두고 표시만 바꾸므로 절대 위치로 포갠다. */
+.panel video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 /* 크림색 안쪽 테두리를 inset box-shadow 로 주면 영상이 로드되는 순간
    그 위를 덮어버려 테두리가 벗겨졌다 씌워졌다 한다. 영상 위에 얹는다. */
 .panel::after{
@@ -326,14 +327,23 @@ video.cast-media{
   <section class="scene" id="s-cast">
     <div class="hill back"></div><div class="hill"></div>
     <img id="cast-img" class="cast-media" alt="">
+    <!-- 흰둥이는 영상이다. 그때그때 만들면 그 순간에 받기 시작해 검은 화면이 뜬다.
+         처음부터 여기 두고 보이기/숨기기만 한다. -->
+    <video id="v-shiro" class="cast-media" src="a/shiro.mp4"
+      muted playsinline loop preload="auto" style="display:none"></video>
     <div id="cast-name"></div>
     <div class="caption" id="cast-line"></div>
   </section>
 
   <!-- 3. 러닝 -->
   <section class="scene" id="s-run">
-    <div class="panel"><video id="v-run" src="a/shin-run.mp4"
-      muted playsinline loop preload="auto"></video></div>
+    <!-- 두 클립을 겹쳐 두고 표시만 바꾼다. src 를 갈아끼우면 그 순간 다시 받는다. -->
+    <div class="panel">
+      <video id="v-run" src="a/shin-run.mp4"
+        muted playsinline loop preload="auto"></video>
+      <video id="v-news" src="a/shin-news.mp4"
+        muted playsinline loop preload="auto" style="display:none"></video>
+    </div>
     <div class="caption" id="cap-run"></div>
   </section>
 
@@ -433,7 +443,7 @@ const VOICE = {
 const CAST = [
   { img:'a/shin-front-alpha.png', name:'짱구',
     line:'안녕하세요~ 저는 짱구예요', v:'v01', p:1.9 },
-  { img:'a/shiro.mp4',            name:'흰둥이',
+  { vid:'#v-shiro',                               name:'흰둥이',
     line:'얘는 우리 흰둥이고요', v:'v02' },
   { img:'a/friends-alpha.png',    name:'떡잎방범대',
     line:'다들 오늘 무슨 날인지 안대요', v:'v03' },
@@ -444,9 +454,8 @@ const CAST = [
 const RUN_CAPS = [
   { t:'그래서 지금 열심히 달려가는 중이에요', v:'v05', r:1.14 },
   { t:'흰둥이도 같이 뛰어요',                 v:'v06', r:1.14 },
-  /* clip을 주면 그 자막 동안만 영상이 바뀐다 */
-  { t:'오늘 떡잎마을에 큰일이 났거든요',       v:'v07', r:1.1,
-    clip:'a/shin-news.mp4' }
+  /* vid 를 주면 그 자막 동안만 다른 클립을 보여준다 (미리 DOM에 있는 것) */
+  { t:'오늘 떡잎마을에 큰일이 났거든요',       v:'v07', r:1.1, vid:'#v-news' }
 ];
 
 /* 눈썹 씰룩 — 쑥쓰러움 직전에 한 번 치고 들어간다.
@@ -529,7 +538,12 @@ $('#final-from').textContent = LETTER.from;
 
 /* ── 유틸 ── */
 let current = null;
-let aborted = false;
+/* 다시 보기를 누르면 이전 재생을 끊어야 한다. 예전에는 aborted 플래그를 썼는데,
+   run() 이 시작하면서 그 플래그를 다시 false 로 만들어 버려 멈췄어야 할 루프가
+   되살아났다(= 소리가 겹쳤다). 재생마다 번호를 매기고, 번호가 바뀌면 옛 루프는
+   스스로 빠져나가게 한다. */
+let runId = 0;
+const stale = id => id !== runId;
 
 function show(name){
   if(current) scenes[current].classList.remove('on');
@@ -578,24 +592,26 @@ async function play(v){
 function isVideo(src){
   return /\.mp4(\?|$)/i.test(src) || src.startsWith('data:video');
 }
-/* 같은 자리의 영상만 갈아끼운다. 이미 그 영상이면 다시 로드하지 않는다.
-   (data URI는 수십만 자라 dataset에 넣지 않고 변수로 들고 있는다) */
-let curClipSrc = null;
-function setClip(v, src){
-  if(curClipSrc === src) return;
-  curClipSrc = src;
-  v.src = src;
-  play(v);
+/* 같은 칸에 겹쳐 둔 클립 중 하나만 보여준다.
+   예전에는 src 를 갈아끼웠는데, 그러면 그 순간에 다시 받기 시작해서
+   검은 화면이 잠깐 뜬다. 전부 처음부터 DOM 에 두고 표시만 바꾼다. */
+function showOne(list, target){
+  for(const sel of list){
+    const v = $(sel);
+    if(!v) continue;
+    if(sel === target){ v.style.display = ''; play(v); }
+    else { v.style.display = 'none'; v.pause(); }
+  }
 }
 /* 자막 한 줄 띄우고 같이 말하게 한 뒤 지우기.
    item은 문자열이거나 {t, v, p, r} 객체. */
-async function line(el, item, ms){
+async function line(el, item, ms, id){
   const obj = typeof item === 'string' ? { t:item } : item;
   el.textContent = obj.t;
   el.classList.add('on');
   speak(obj);
   await wait(ms);
-  if(aborted) return;
+  if(stale(id)) return;
   el.classList.remove('on');
   await wait(360);
 }
@@ -719,28 +735,25 @@ function tts(text, item){
 
 /* ── 캐릭터 소개: 이미지든 영상이든 같은 자리에 ── */
 const castImg = $('#cast-img'), castName = $('#cast-name'), castLine = $('#cast-line');
-let castVideo = null;
-function setCast(src){
-  if(castVideo){ castVideo.remove(); castVideo = null; }
-  if(isVideo(src)){
+const shiroEl = $('#v-shiro');
+function setCast(c){
+  if(c.vid){
     castImg.style.display = 'none';
-    const v = document.createElement('video');
-    v.src = src; v.muted = true; v.loop = true;
-    v.playsInline = true; v.setAttribute('playsinline','');
-    v.className = 'cast-media';
-    castImg.after(v);
-    castVideo = v;
-    v.play().catch(()=>{});
+    const v = $(c.vid);
+    v.style.display = '';
+    play(v);
     return v;
   }
+  shiroEl.style.display = 'none';
+  shiroEl.pause();
   castImg.style.display = '';
-  castImg.src = src;
+  castImg.src = c.img;
   return castImg;
 }
 
 /* ── 전체 흐름 ── */
 async function run(){
-  aborted = false;
+  const my = ++runId;
   $('#skip').classList.add('show');
 
   /* 1. 오프닝 타이틀 — 인트로 영상 배경 + 인트로 사운드 */
@@ -748,66 +761,66 @@ async function run(){
   play($('#v-intro'));
   if(!muted){ sfxIntro.currentTime = 0; sfxIntro.play().catch(()=>{}); }
   $('#sub1').classList.add('on');
-  await wait(700); if(aborted) return;
+  await wait(700); if(stale(my)) return;
   $('#title').classList.add('on');
   speak(TITLE_LINE);            /* 2.66초, 장면(5.1초) 안에 끝난다 */
   setTimeout(()=>{
     stage.classList.add('shake');
     setTimeout(()=>stage.classList.remove('shake'),350);
   }, 390);
-  await wait(1500); if(aborted) return;
+  await wait(1500); if(stale(my)) return;
   $('#sub2').classList.add('on');
   /* 인트로 사운드가 5초라 여기까지 5.1초를 채운다.
      3.9초에 끊으면 소리가 잘려 전환이 성급하게 느껴진다. */
-  await wait(2900); if(aborted) return;
+  await wait(2900); if(stale(my)) return;
 
   /* 2. 캐릭터 소개 — 오프닝이 끝났으니 배경음악을 깔기 시작한다 */
   show('cast');
   startBgm();
   /* 타이틀이 끝나자마자 "안녕하세요"가 나오면 숨 돌릴 틈이 없다. 한 박자 쉰다. */
-  await wait(500); if(aborted) return;
+  await wait(500); if(stale(my)) return;
   for(const c of CAST){
-    const el = setCast(c.img);
+    const el = setCast(c);
     el.classList.remove('on'); void el.offsetWidth; el.classList.add('on');
     castName.textContent = c.name;
     castName.classList.remove('on'); void castName.offsetWidth;
-    await wait(260); if(aborted) return;
+    await wait(260); if(stale(my)) return;
     castName.classList.add('on');
     /* 음성이 최대 2.99초라 3.3초는 줘야 말이 안 잘린다 */
-    await line(castLine, { t:c.line, v:c.v, p:c.p, r:c.r }, 3300);
-    if(aborted) return;
+    await line(castLine, { t:c.line, v:c.v, p:c.p, r:c.r }, 3300, my);
+    if(stale(my)) return;
   }
 
-  /* 3. 러닝 — 자막에 clip이 붙어 있으면 그 구간만 영상을 바꾼다 */
+  /* 3. 러닝 — 자막에 vid 가 붙어 있으면 그 구간만 다른 클립을 보여준다 */
   show('run');
-  const vRun = $('#v-run'), RUN_BASE = 'a/shin-run.mp4';
-  setClip(vRun, RUN_BASE);
-  await wait(500); if(aborted) return;
+  const RUN_CLIPS = ['#v-run', '#v-news'];
+  showOne(RUN_CLIPS, '#v-run');
+  await wait(500); if(stale(my)) return;
   for(const t of RUN_CAPS){
-    setClip(vRun, t.clip || RUN_BASE);
-    await line($('#cap-run'), t, 3500);   /* 음성 최대 3.24초 */
-    if(aborted) return;
+    showOne(RUN_CLIPS, t.vid || '#v-run');
+    await line($('#cap-run'), t, 3500, my);   /* 음성 최대 3.24초 */
+    if(stale(my)) return;
   }
 
   /* 4. 엉덩이 임팩트 */
   show('wipe');
   play($('#v-wipe'));
-  await wait(1850); if(aborted) return;
+  await wait(1850); if(stale(my)) return;
 
   /* 5. 눈썹 씰룩 */
   show('flirt');
   play($('#v-flirt'));
-  await wait(400); if(aborted) return;
-  await line($('#cap-flirt'), FLIRT_LINE, 3000);   /* 음성 2.38초 */
-  if(aborted) return;
+  await wait(400); if(stale(my)) return;
+  await line($('#cap-flirt'), FLIRT_LINE, 3000, my);   /* 음성 2.38초 */
+  if(stale(my)) return;
 
   /* 6. 쑥쓰러움 */
   show('shy');
   play($('#v-shy'));
-  await wait(450); if(aborted) return;
+  await wait(450); if(stale(my)) return;
   for(const t of SHY_CAPS){
-    await line($('#cap-shy'), t, 2900);   /* 음성 최대 2.59초 */
-    if(aborted) return;
+    await line($('#cap-shy'), t, 2900, my);   /* 음성 최대 2.59초 */
+    if(stale(my)) return;
   }
 
   /* 6. 피날레 */
@@ -815,7 +828,6 @@ async function run(){
 }
 
 function finale(){
-  aborted = false;
   $('#skip').classList.remove('show');
   show('party');
   $('#cap-party').textContent = PARTY_LINE.t;
@@ -825,8 +837,20 @@ function finale(){
 }
 
 /* ── 조작 ── */
+/* 폰 브라우저는 데이터를 아끼려고, 사용자가 누르기 전에는 영상을 받아두지 않는다.
+   preload="auto" 도 무시한다. 그래서 장면이 바뀌는 순간에야 받기 시작해 검은 화면이 뜬다.
+   시작 버튼을 누른 이 순간이 유일하게 재생이 허용되는 시점이므로,
+   여기서 모든 영상을 잠깐 재생했다 멈춰 버퍼를 채워 둔다. */
+function primeVideos(){
+  for(const v of document.querySelectorAll('video')){
+    const p = v.play();
+    if(p && p.then) p.then(()=>{ v.pause(); v.currentTime = 0; }).catch(()=>{});
+  }
+}
+
 $('#start').onclick = ()=>{
   $('#gate').classList.add('gone');
+  primeVideos();
   primeBgm();
   /* 모바일은 사용자 조작 없이는 음성이 안 나온다. 이 클릭 안에서 한 번
      빈 문장을 흘려 엔진을 깨워둬야 이후 대사가 정상 재생된다. */
@@ -836,7 +860,7 @@ $('#start').onclick = ()=>{
   run();
 };
 $('#skip').onclick = ()=>{
-  aborted = true; cancelWaits(); stopVoice();
+  runId++; cancelWaits(); stopVoice();
   finale();
 };
 $('#open').onclick = ()=>{
@@ -847,7 +871,10 @@ $('#open').onclick = ()=>{
   burst(40);
 };
 $('#replay').onclick = ()=>{
-  aborted = true; cancelWaits(); stopVoice();
+  /* 완전히 리셋한다. 소리·타이머·장면 상태를 전부 되돌리고 새로 시작. */
+  runId++; cancelWaits(); stopVoice();
+  sfxIntro.pause(); sfxIntro.currentTime = 0;
+  clearInterval(fadeTimer);
   confettiOn = false; parts = [];
   $('#letter').classList.remove('on');
   for(const id of ['sub1','sub2','title']) $('#'+id).classList.remove('on');
