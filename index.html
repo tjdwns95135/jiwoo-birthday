@@ -911,7 +911,11 @@ function finale(){
   sfxIntro.pause(); sfxIntro.currentTime = 0;
   startBgm();
   show('party');
-  $('#cap-party').textContent = PARTY_LINE.t;
+  /* resetStage() 가 on 을 떼므로 여기서 다시 붙여야 자막이 보인다.
+     (예전엔 HTML 에 on 이 박혀 있어서 그냥 보였다) */
+  const capParty = $('#cap-party');
+  capParty.textContent = PARTY_LINE.t;
+  capParty.classList.add('on');
   speak(PARTY_LINE);
   sizeCanvas();
   parts = []; confettiOn = true; burst(46); tick();
