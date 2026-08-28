@@ -9,7 +9,7 @@
 <meta property="og:type" content="website">
 <meta property="og:title" content="오늘은 지우의 생일이래요">
 <meta property="og:description" content="짱구가 지우한테 전하는 생일 축하">
-<meta property="og:image" content="https://tjdwns95135.github.io/jiwoo-birthday/a/og-v2.png?b=08282359">
+<meta property="og:image" content="https://tjdwns95135.github.io/jiwoo-birthday/a/og-v2.png?b=08290003">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
@@ -72,7 +72,11 @@ body{
   position:absolute;top:0;left:0;
   width:200%;height:100%;
   will-change:transform;
-  animation:strip 64s linear infinite;
+  /* 64초로 두면 초당 13px, 프레임당 0.2px 밖에 안 움직인다. iOS 는 이런 미세
+     이동을 픽셀 단위로 끊어 그려서, 몇 프레임 멈췄다 1px 튀는 식이 된다.
+     fps 는 60으로 멀쩡한데 눈에는 버벅여 보이는 이유다.
+     프레임당 이동량을 픽셀에 가깝게 키운다. */
+  animation:strip 18s linear infinite;
 }
 .cloud{position:absolute;background:var(--cloud);border-radius:50%;
   box-shadow:0 7px 0 rgba(150,195,235,.45)}
@@ -445,7 +449,7 @@ video.cast-media{
 
   <!-- 1. 오프닝 타이틀 -->
   <section class="scene" id="s-title">
-    <video id="v-intro" src="a/intro.mp4?b=08282359" muted playsinline loop preload="auto"></video>
+    <video id="v-intro" src="a/intro.mp4?b=08290003" muted playsinline loop preload="auto"></video>
     <div class="sub dark" id="sub1">떡잎마을에서 알려드립니다</div>
     <h1 class="bigtitle" id="title">오늘은<br>지우의<br>생일이래요</h1>
     <div class="sub dark" id="sub2">— 오늘의 주인공 등장 —</div>
@@ -458,13 +462,13 @@ video.cast-media{
          그 순간부터 받기 시작해서 빈 화면이 잠깐 뜬다. -->
     <div class="cast-slot">
       <img   id="c-shin"    class="cast-media" alt="" style="display:none"
-        src="a/shin-front-alpha.png?b=08282359">
+        src="a/shin-front-alpha.png?b=08290003">
       <video id="v-shiro"   class="cast-media" style="display:none"
-        src="a/shiro.mp4?b=08282359" muted playsinline loop preload="auto"></video>
+        src="a/shiro.mp4?b=08290003" muted playsinline loop preload="auto"></video>
       <img   id="c-friends" class="cast-media" alt="" style="display:none"
-        src="a/friends-alpha.png?b=08282359">
+        src="a/friends-alpha.png?b=08290003">
       <img   id="c-mask"    class="cast-media" alt="" style="display:none"
-        src="a/mask-alpha.png?b=08282359">
+        src="a/mask-alpha.png?b=08290003">
     </div>
     <div id="cast-name"></div>
     <div class="cap-slot"><div class="caption" id="cast-line"></div></div>
@@ -474,9 +478,9 @@ video.cast-media{
   <section class="scene" id="s-run">
     <!-- 두 클립을 겹쳐 두고 표시만 바꾼다. src 를 갈아끼우면 그 순간 다시 받는다. -->
     <div class="panel">
-      <video id="v-run" src="a/shin-run.mp4?b=08282359"
+      <video id="v-run" src="a/shin-run.mp4?b=08290003"
         muted playsinline loop preload="auto"></video>
-      <video id="v-news" src="a/shin-news.mp4?b=08282359"
+      <video id="v-news" src="a/shin-news.mp4?b=08290003"
         muted playsinline loop preload="auto" style="display:none"></video>
     </div>
     <div class="cap-slot"><div class="caption" id="cap-run"></div></div>
@@ -484,20 +488,20 @@ video.cast-media{
 
   <!-- 4. 엉덩이 임팩트 -->
   <section class="scene" id="s-wipe">
-    <video id="v-wipe" src="a/shin-butt.mp4?b=08282359"
+    <video id="v-wipe" src="a/shin-butt.mp4?b=08290003"
       muted playsinline preload="auto"></video>
   </section>
 
   <!-- 5. 눈썹 씰룩 -->
   <section class="scene" id="s-flirt">
-    <div class="panel"><video id="v-flirt" src="a/shin-eyebrow.mp4?b=08282359"
+    <div class="panel"><video id="v-flirt" src="a/shin-eyebrow.mp4?b=08290003"
       muted playsinline loop preload="auto"></video></div>
     <div class="cap-slot"><div class="caption" id="cap-flirt"></div></div>
   </section>
 
   <!-- 6. 쑥쓰러움 -->
   <section class="scene" id="s-shy">
-    <div class="panel"><video id="v-shy" src="a/shin-shy.mp4?b=08282359"
+    <div class="panel"><video id="v-shy" src="a/shin-shy.mp4?b=08290003"
       muted playsinline loop preload="auto"></video></div>
     <div class="cap-slot"><div class="caption" id="cap-shy"></div></div>
   </section>
@@ -505,7 +509,7 @@ video.cast-media{
   <!-- 6. 피날레 -->
   <section class="scene" id="s-party">
     <canvas id="confetti"></canvas>
-    <img id="dancer" src="a/shin-dance-alpha.png?b=08282359" alt="춤추는 짱구">
+    <img id="dancer" src="a/shin-dance-alpha.png?b=08290003" alt="춤추는 짱구">
     <div class="caption on" id="cap-party">준비됐어? 눌러봐!</div>
     <button class="btn" id="open">🎂 열어보기</button>
   </section>
@@ -528,7 +532,7 @@ video.cast-media{
             <text class="arc-t"><textPath href="#arc-p" startOffset="50%"
               text-anchor="middle">우주 최강 미녀 심지우</textPath></text>
           </svg>
-          <img class="photo" id="photo" src="a/photo-e73799067b891d63.jpg?b=08282359" alt="지우">
+          <img class="photo" id="photo" src="a/photo-e73799067b891d63.jpg?b=08290003" alt="지우">
         </div>
       </div>
     </div>
@@ -544,7 +548,7 @@ video.cast-media{
     <!-- 3층 구조: 원본 그림 → 간판(원래 로고를 덮음) → 간판에 걸친 캐릭터 다시 얹기.
          원본을 지우지 않으니 번지거나 얼룩이 남지 않는다. -->
     <div class="cover">
-      <img class="cover-base" src="a/title-card.png?b=08282359" alt="">
+      <img class="cover-base" src="a/title-card.png?b=08290003" alt="">
       <div class="logo-board"><span>지우는 못말려</span></div>
     </div>
     <button class="btn" id="start">눌러줘!</button>
@@ -553,11 +557,11 @@ video.cast-media{
 
   <button id="skip">건너뛰기 ▸</button>
   <!-- 인트로 사운드(5초)는 타이틀 장면에 한 번. bgm.mp3는 넣어두면 자동으로 잡힌다. -->
-  <audio id="sfx-intro" src="a/intro.mp3?b=08282359" preload="auto"></audio>
+  <audio id="sfx-intro" src="a/intro.mp3?b=08290003" preload="auto"></audio>
   <!-- 대사는 이 엘리먼트 하나를 돌려 쓴다. 매번 new Audio() 로 만들면
        폰 브라우저가 "사용자가 누른 적 없는 새 소리"로 보고 막을 수 있다. -->
   <audio id="voice" preload="auto"></audio>
-  <audio id="bgm" src="a/bgm.mp3?b=08282359" loop preload="auto"></audio>
+  <audio id="bgm" src="a/bgm.mp3?b=08290003" loop preload="auto"></audio>
 </div>
 
 <script>
@@ -594,7 +598,7 @@ const VOICE = {
 };
 
 /* 캐릭터 소개 컷. 짱구 말투로 한 줄씩.
-   v: 녹음 파일 이름(a/v01.mp3?b=08282359), p/r: 그 줄만 음높이·속도 조정 */
+   v: 녹음 파일 이름(a/v01.mp3?b=08290003), p/r: 그 줄만 음높이·속도 조정 */
 const CAST = [
   { el:'#c-shin',    name:'짱구',       line:'안녕하세요~ 저는 짱구예요',        v:'v01', p:1.9 },
   { el:'#v-shiro',   name:'흰둥이',     line:'얘는 우리 흰둥이고요',             v:'v02' },
@@ -709,23 +713,23 @@ if(location.search.indexOf('perf=1') >= 0){
    표지를 보고 있는 동안(사용자가 버튼 누르기 전) 전부 캐시에 채워둔다. */
 (function prefetch(){
   const list = [
-    'a/intro.mp4?b=08282359',
-    'a/shin-run.mp4?b=08282359',
-    'a/shin-news.mp4?b=08282359',
-    'a/shin-butt.mp4?b=08282359',
-    'a/shin-eyebrow.mp4?b=08282359',
-    'a/shin-shy.mp4?b=08282359',
-    'a/shiro.mp4?b=08282359',
-    'a/intro.mp3?b=08282359',
+    'a/intro.mp4?b=08290003',
+    'a/shin-run.mp4?b=08290003',
+    'a/shin-news.mp4?b=08290003',
+    'a/shin-butt.mp4?b=08290003',
+    'a/shin-eyebrow.mp4?b=08290003',
+    'a/shin-shy.mp4?b=08290003',
+    'a/shiro.mp4?b=08290003',
+    'a/intro.mp3?b=08290003',
     /* 소개 컷 APNG. 떡잎방범대가 956KB 로 제일 크다. */
-    'a/shin-front-alpha.png?b=08282359',
-    'a/friends-alpha.png?b=08282359',
-    'a/mask-alpha.png?b=08282359',
-    'a/shin-dance-alpha.png?b=08282359',
-    'a/photo-e73799067b891d63.jpg?b=08282359'
+    'a/shin-front-alpha.png?b=08290003',
+    'a/friends-alpha.png?b=08290003',
+    'a/mask-alpha.png?b=08290003',
+    'a/shin-dance-alpha.png?b=08290003',
+    'a/photo-e73799067b891d63.jpg?b=08290003'
   ];
   for(let i = 0; i <= 11; i++){   /* v00 = 오프닝 타이틀 대사 */
-    list.push('a/v' + String(i).padStart(2,'0') + '.mp3?b=08282359');
+    list.push('a/v' + String(i).padStart(2,'0') + '.mp3?b=08290003');
   }
   for(const u of list){
     fetch(u).then(r => r.blob()).catch(()=>{});
@@ -948,7 +952,7 @@ function startBgm(){
 }
 
 /* ── 짱구 목소리 ──
-   녹음 파일(a/vNN.mp3?b=08282359)이 있으면 그걸 쓰고, 없으면 브라우저 음성으로
+   녹음 파일(a/vNN.mp3?b=08290003)이 있으면 그걸 쓰고, 없으면 브라우저 음성으로
    대체한다. 브라우저 음성은 그대로 쓰면 어른 목소리라, 음높이를 크게 올리고
    속도를 붙여 만화 꼬마 톤으로 만든다. */
 let koVoice = null;
@@ -972,7 +976,7 @@ function speak(item){
   stopVoice();
   const text = item.t || item.line || '';
   if(!item.v) return tts(text, item);
-  const src = `a/${item.v}.mp3?b=08282359`;
+  const src = `a/${item.v}.mp3?b=08290003`;
   if(!src) return tts(text, item);
   let fellBack = false;
   const fallback = ()=>{ if(!fellBack){ fellBack = true; tts(text, item); } };
