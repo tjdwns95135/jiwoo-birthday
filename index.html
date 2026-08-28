@@ -765,6 +765,15 @@ async function run(){
   const my = ++runId;
   $('#skip').classList.add('show');
 
+  /* 오프닝 동안에는 배경음악을 재운다.
+     첫 재생 때는 아직 시작 전이라 문제가 없지만, 다시 보기로 들어오면
+     배경음악이 이미 돌고 있어서 인트로 사운드 위에 겹쳐 나온다.
+     캐릭터 소개에 들어갈 때 startBgm() 이 다시 올린다. */
+  bgmAllowed = false;
+  clearInterval(fadeTimer);
+  bgm.muted = true;
+  bgm.volume = 0;
+
   /* 1. 오프닝 타이틀 — 인트로 영상 배경 + 인트로 사운드 */
   show('title');
   play($('#v-intro'));
@@ -838,6 +847,10 @@ async function run(){
 
 function finale(){
   $('#skip').classList.remove('show');
+  /* 건너뛰기로 바로 들어올 수도 있다. 그 경우 인트로 사운드가 아직 울리고 있고
+     배경음악은 오프닝 때 재워둔 상태라, 여기서 정리하고 다시 올린다. */
+  sfxIntro.pause(); sfxIntro.currentTime = 0;
+  startBgm();
   show('party');
   $('#cap-party').textContent = PARTY_LINE.t;
   speak(PARTY_LINE);
