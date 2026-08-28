@@ -34,7 +34,9 @@
 html,body{height:100%;overflow:hidden;background:#141414}
 body{
   font-family:var(--body); color:var(--ink);
-  display:grid; place-items:center;
+  /* 세로는 위쪽 기준. 가운데로 두면 폰 주소창이 사라져 화면이 커질 때
+     남는 높이의 절반만큼 전체가 아래로 밀려서 버튼이 화면 밖으로 나간다. */
+  display:grid; align-items:start; justify-items:center;
   -webkit-font-smoothing:antialiased;
   -webkit-tap-highlight-color:transparent;
   user-select:none;
@@ -62,8 +64,12 @@ body{
 
 /* ── 흘러가는 구름 ── */
 .clouds{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+/* drop-shadow 필터는 매 프레임 다시 계산돼서 구름이 끊긴다.
+   같은 느낌은 아래쪽에 반투명 테두리 한 겹으로 낸다(그리기 비용 없음).
+   will-change 로 별도 레이어에 올려 다른 요소 repaint 와 분리한다. */
 .cloud{position:absolute;left:0;background:var(--cloud);border-radius:50%;
-  filter:drop-shadow(0 7px 0 rgba(150,195,235,.45))}
+  box-shadow:0 7px 0 rgba(150,195,235,.45);
+  will-change:transform;transform:translateZ(0)}
 .cloud::before,.cloud::after{content:'';position:absolute;background:var(--cloud);border-radius:50%}
 .cloud::before{width:64%;height:112%;left:-22%;top:4%}
 .cloud::after{width:52%;height:96%;right:-16%;top:14%}
@@ -169,8 +175,19 @@ body{
 #s-cast{justify-content:center;gap:10px}
 /* 소개 컷은 PNG일 수도 MP4일 수도 있다. 둘이 같은 자리·같은 크기를 쓰도록
    인라인 스타일을 복사하지 말고 이 클래스 하나를 공유한다. */
-.cast-media{
+/* 소개 컷·이름·자막이 하나씩 나타나면 세로 가운데 정렬이 매번 다시 잡혀
+   화면 전체가 아래에서 위로 밀린다. 자리를 미리 고정해 둔다. */
+.cast-slot{
+  position:relative;flex:none;
   width:min(72cqw,320px);height:min(72cqw,320px);
+}
+.cap-slot{
+  width:100%;min-height:58px;flex:none;
+  display:grid;place-items:center;
+}
+.cast-media{
+  position:absolute;inset:0;
+  width:100%;height:100%;
   object-fit:contain;border-radius:14px;
   filter:drop-shadow(0 14px 12px rgba(0,0,0,.26));
   opacity:0;transform:scale(.6) rotate(-8deg);
@@ -188,6 +205,7 @@ video.cast-media{
 }
 @keyframes castIn{to{opacity:1;transform:scale(1) rotate(0)}}
 #cast-name{
+  min-height:1.15em;                 /* 이름이 비어 있어도 자리를 지킨다 */
   font-family:var(--title);font-size:clamp(28px,8.5cqw,40px);
   color:var(--cream);-webkit-text-stroke:8px var(--ink);paint-order:stroke fill;
   text-shadow:0 6px 0 var(--red);
@@ -203,7 +221,7 @@ video.cast-media{
 /* ── 피날레 ── */
 /* vh 를 쓰면 폰 주소창이 들락거릴 때마다 값이 바뀌어 버튼이 위아래로 밀린다.
    스테이지 높이는 JS로 고정해 뒀으니 여기는 고정 px 로 둔다. */
-#s-party{justify-content:flex-end;padding-bottom:64px;gap:14px}
+#s-party{justify-content:flex-end;padding-bottom:92px;gap:14px}
 #dancer{width:min(60cqw,260px);height:auto;
   filter:drop-shadow(0 12px 10px rgba(0,0,0,.28))}
 #confetti{position:absolute;inset:0;pointer-events:none}
@@ -340,16 +358,18 @@ video.cast-media{
     <div class="hill back"></div><div class="hill"></div>
     <!-- 소개 컷 4개를 전부 여기 두고 표시만 바꾼다. 그때그때 src 를 넣으면
          그 순간부터 받기 시작해서 빈 화면이 잠깐 뜬다. -->
-    <img   id="c-shin"    class="cast-media" alt="" style="display:none"
-      src="a/shin-front-alpha.png">
-    <video id="v-shiro"   class="cast-media" style="display:none"
-      src="a/shiro.mp4" muted playsinline loop preload="auto"></video>
-    <img   id="c-friends" class="cast-media" alt="" style="display:none"
-      src="a/friends-alpha.png">
-    <img   id="c-mask"    class="cast-media" alt="" style="display:none"
-      src="a/mask-alpha.png">
+    <div class="cast-slot">
+      <img   id="c-shin"    class="cast-media" alt="" style="display:none"
+        src="a/shin-front-alpha.png">
+      <video id="v-shiro"   class="cast-media" style="display:none"
+        src="a/shiro.mp4" muted playsinline loop preload="auto"></video>
+      <img   id="c-friends" class="cast-media" alt="" style="display:none"
+        src="a/friends-alpha.png">
+      <img   id="c-mask"    class="cast-media" alt="" style="display:none"
+        src="a/mask-alpha.png">
+    </div>
     <div id="cast-name"></div>
-    <div class="caption" id="cast-line"></div>
+    <div class="cap-slot"><div class="caption" id="cast-line"></div></div>
   </section>
 
   <!-- 3. 러닝 -->
@@ -361,7 +381,7 @@ video.cast-media{
       <video id="v-news" src="a/shin-news.mp4"
         muted playsinline loop preload="auto" style="display:none"></video>
     </div>
-    <div class="caption" id="cap-run"></div>
+    <div class="cap-slot"><div class="caption" id="cap-run"></div></div>
   </section>
 
   <!-- 4. 엉덩이 임팩트 -->
@@ -374,14 +394,14 @@ video.cast-media{
   <section class="scene" id="s-flirt">
     <div class="panel"><video id="v-flirt" src="a/shin-eyebrow.mp4"
       muted playsinline loop preload="auto"></video></div>
-    <div class="caption" id="cap-flirt"></div>
+    <div class="cap-slot"><div class="caption" id="cap-flirt"></div></div>
   </section>
 
   <!-- 6. 쑥쓰러움 -->
   <section class="scene" id="s-shy">
     <div class="panel"><video id="v-shy" src="a/shin-shy.mp4"
       muted playsinline loop preload="auto"></video></div>
-    <div class="caption" id="cap-shy"></div>
+    <div class="cap-slot"><div class="caption" id="cap-shy"></div></div>
   </section>
 
   <!-- 6. 피날레 -->
@@ -777,8 +797,31 @@ function setCast(c){
 }
 
 /* ── 전체 흐름 ── */
+/* 다시 보기로 들어오면 이전 재생이 남긴 상태가 그대로다.
+   예를 들어 마지막에 보여준 액션가면이 표시된 채여서, 짱구보다 먼저 보인다.
+   장면에 쓰이는 표시 상태를 전부 처음으로 되돌린다. */
+function resetStage(){
+  for(const sel of CAST_ELS){
+    const el = $(sel);
+    if(!el) continue;
+    el.style.display = 'none';
+    el.classList.remove('on');
+    if(el.tagName === 'VIDEO') el.pause();
+  }
+  castName.textContent = '';
+  castName.classList.remove('on');
+  for(const id of ['cast-line','cap-run','cap-shy','cap-flirt','cap-party']){
+    const el = $('#' + id);
+    if(el) el.classList.remove('on');
+  }
+  for(const id of ['sub1','sub2','title']) $('#' + id).classList.remove('on');
+  $('#letter').classList.remove('on');
+  showOne(['#v-run', '#v-news'], '#v-run');
+}
+
 async function run(){
   const my = ++runId;
+  resetStage();
   $('#skip').classList.add('show');
 
   /* 오프닝 동안에는 배경음악을 재운다.
@@ -880,10 +923,12 @@ function finale(){
    시작 버튼을 누른 이 순간이 유일하게 재생이 허용되는 시점이므로,
    여기서 모든 영상을 잠깐 재생했다 멈춰 버퍼를 채워 둔다. */
 function primeVideos(){
-  for(const v of document.querySelectorAll('video')){
+  /* 7개를 동시에 재생시키면 디코더가 몰려 첫 몇 초가 끊긴다. 조금씩 흩는다. */
+  const vs = [...document.querySelectorAll('video')];
+  vs.forEach((v, i) => setTimeout(()=>{
     const p = v.play();
     if(p && p.then) p.then(()=>{ v.pause(); v.currentTime = 0; }).catch(()=>{});
-  }
+  }, i * 120));
 }
 
 $('#start').onclick = ()=>{
@@ -914,9 +959,8 @@ $('#replay').onclick = ()=>{
   sfxIntro.pause(); sfxIntro.currentTime = 0;
   clearInterval(fadeTimer);
   confettiOn = false; parts = [];
-  $('#letter').classList.remove('on');
-  for(const id of ['sub1','sub2','title']) $('#'+id).classList.remove('on');
-  void $('#title').offsetWidth;
+  /* 화면 상태는 run() 첫머리의 resetStage() 가 한 곳에서 되돌린다.
+     여기저기 흩어 놓으니 액션가면이 남아 있는 것 같은 빠짐이 생겼다. */
   run();
 };
 
