@@ -222,10 +222,17 @@ video.cast-media{
   padding:14px 34px;cursor:pointer;
   box-shadow:0 7px 0 var(--ink);
   transition:transform .1s,box-shadow .1s;
-  animation:bob 1.5s ease-in-out infinite;
+  /* 위아래로 튕기면 "흔들리다 멈췄다" 처럼 보인다. 키프레임 두 개짜리
+     ease-in-out 은 양 끝에서 감속하며 멎기 때문이다.
+     자리를 옮기지 않고 크기만 아주 조금 변하게 해서 눈에만 띄게 한다. */
+  animation:pulse 2.4s ease-in-out infinite;
 }
-.btn:active{transform:translateY(6px);box-shadow:0 1px 0 var(--ink);animation:none}
-@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+.btn:active{transform:scale(.96) translateY(5px);box-shadow:0 1px 0 var(--ink);animation:none}
+@keyframes pulse{
+  0%,100%{transform:scale(1)}
+  45%{transform:scale(1.045)}
+  70%{transform:scale(1.01)}
+}
 
 /* ── 시작 화면 ── */
 #gate{
