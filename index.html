@@ -326,11 +326,16 @@ video.cast-media{
   <!-- 2. 캐릭터 소개 -->
   <section class="scene" id="s-cast">
     <div class="hill back"></div><div class="hill"></div>
-    <img id="cast-img" class="cast-media" alt="">
-    <!-- 흰둥이는 영상이다. 그때그때 만들면 그 순간에 받기 시작해 검은 화면이 뜬다.
-         처음부터 여기 두고 보이기/숨기기만 한다. -->
-    <video id="v-shiro" class="cast-media" src="a/shiro.mp4"
-      muted playsinline loop preload="auto" style="display:none"></video>
+    <!-- 소개 컷 4개를 전부 여기 두고 표시만 바꾼다. 그때그때 src 를 넣으면
+         그 순간부터 받기 시작해서 빈 화면이 잠깐 뜬다. -->
+    <img   id="c-shin"    class="cast-media" alt="" style="display:none"
+      src="a/shin-front-alpha.png">
+    <video id="v-shiro"   class="cast-media" style="display:none"
+      src="a/shiro.mp4" muted playsinline loop preload="auto"></video>
+    <img   id="c-friends" class="cast-media" alt="" style="display:none"
+      src="a/friends-alpha.png">
+    <img   id="c-mask"    class="cast-media" alt="" style="display:none"
+      src="a/mask-alpha.png">
     <div id="cast-name"></div>
     <div class="caption" id="cast-line"></div>
   </section>
@@ -441,14 +446,10 @@ const VOICE = {
 /* 캐릭터 소개 컷. 짱구 말투로 한 줄씩.
    v: 녹음 파일 이름(a/v01.mp3), p/r: 그 줄만 음높이·속도 조정 */
 const CAST = [
-  { img:'a/shin-front-alpha.png', name:'짱구',
-    line:'안녕하세요~ 저는 짱구예요', v:'v01', p:1.9 },
-  { vid:'#v-shiro',                               name:'흰둥이',
-    line:'얘는 우리 흰둥이고요', v:'v02' },
-  { img:'a/friends-alpha.png',    name:'떡잎방범대',
-    line:'다들 오늘 무슨 날인지 안대요', v:'v03' },
-  { img:'a/mask-alpha.png',       name:'액션가면',
-    line:'중요한 날이라 이렇게 갈아입었어요', v:'v04', p:1.5, r:0.98 }
+  { el:'#c-shin',    name:'짱구',       line:'안녕하세요~ 저는 짱구예요',        v:'v01', p:1.9 },
+  { el:'#v-shiro',   name:'흰둥이',     line:'얘는 우리 흰둥이고요',             v:'v02' },
+  { el:'#c-friends', name:'떡잎방범대', line:'다들 오늘 무슨 날인지 안대요',      v:'v03' },
+  { el:'#c-mask',    name:'액션가면',   line:'중요한 날이라 이렇게 갈아입었어요', v:'v04', p:1.5, r:0.98 }
 ];
 
 const RUN_CAPS = [
@@ -498,7 +499,12 @@ const stage = $('#stage');
     'a/shin-eyebrow.mp4',
     'a/shin-shy.mp4',
     'a/shiro.mp4',
-    'a/intro.mp3'
+    'a/intro.mp3',
+    /* 소개 컷 APNG. 떡잎방범대가 956KB 로 제일 크다. */
+    'a/shin-front-alpha.png',
+    'a/friends-alpha.png',
+    'a/mask-alpha.png',
+    'a/shin-dance-alpha.png'
   ];
   for(let i = 0; i <= 11; i++){   /* v00 = 오프닝 타이틀 대사 */
     list.push('a/v' + String(i).padStart(2,'0') + '.mp3');
@@ -734,21 +740,24 @@ function tts(text, item){
 }
 
 /* ── 캐릭터 소개: 이미지든 영상이든 같은 자리에 ── */
-const castImg = $('#cast-img'), castName = $('#cast-name'), castLine = $('#cast-line');
-const shiroEl = $('#v-shiro');
+const castName = $('#cast-name'), castLine = $('#cast-line');
+/* 소개 컷은 넷 다 처음부터 DOM 에 있다. 표시만 바꾼다. */
+const CAST_ELS = ['#c-shin', '#v-shiro', '#c-friends', '#c-mask'];
 function setCast(c){
-  if(c.vid){
-    castImg.style.display = 'none';
-    const v = $(c.vid);
-    v.style.display = '';
-    play(v);
-    return v;
+  let target = null;
+  for(const sel of CAST_ELS){
+    const el = $(sel);
+    if(!el) continue;
+    if(sel === c.el){
+      el.style.display = '';
+      target = el;
+      if(el.tagName === 'VIDEO') play(el);
+    }else{
+      el.style.display = 'none';
+      if(el.tagName === 'VIDEO') el.pause();
+    }
   }
-  shiroEl.style.display = 'none';
-  shiroEl.pause();
-  castImg.style.display = '';
-  castImg.src = c.img;
-  return castImg;
+  return target;
 }
 
 /* ── 전체 흐름 ── */
